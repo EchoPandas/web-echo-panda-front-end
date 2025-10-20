@@ -9,7 +9,7 @@ on:
       - 'prod-v*'
 
 env:
-  REGISTRY: reaksa7236/sovina
+  REGISTRY: reaksa7236/echo-panda
 
 jobs:
   build-and-push:
