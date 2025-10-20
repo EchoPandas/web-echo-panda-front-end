@@ -5,7 +5,8 @@ import { hostname } from 'os'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    hostname: '0.0.0.0',
+    host: "0.0.0.0",
+    port: 3000,
     allowedHosts: ['echo-panda.itedev.online']
   },
   plugins: [
