@@ -14,9 +14,8 @@ import {
   FaTimes,
   FaSun,
   FaMoon,
-  FaMicrophone, 
+  FaMicrophone,
 } from "react-icons/fa";
-
 import { IoMdDisc } from "react-icons/io";
 import { RiPlayListFill } from "react-icons/ri";
 import { MdOutlineExplore } from "react-icons/md";
@@ -65,7 +64,7 @@ const NavBar: React.FC = () => {
   // === LOGOUT HANDLER ===
   const handleLogout = () => {
     localStorage.removeItem("userToken");
-    navigate("/login");
+    void navigate("/login"); // mark promise as intentionally ignored
   };
 
   // === LOGOUT CONFIRM MODAL ===
@@ -82,7 +81,7 @@ const NavBar: React.FC = () => {
             Yes, Log Out
           </button>
           <button
-            onClick={() => setShowLogoutConfirm(false)}
+            onClick={() => { setShowLogoutConfirm(false); }}
             className="bg-gray-600 hover:bg-gray-700 px-5 py-2 rounded-full font-medium transition-all"
           >
             Cancel
@@ -118,7 +117,7 @@ const NavBar: React.FC = () => {
       general: { title: "General", links: [] as SidebarLink[] },
     };
 
-    sidebarLinks.forEach(link => groups[link.group].links.push(link));
+    sidebarLinks.forEach((link) => { groups[link.group].links.push(link); });
 
     return (
       <>
@@ -131,7 +130,7 @@ const NavBar: React.FC = () => {
         {/* Add Playlist Button */}
         <div className="px-6 mt-3">
           <button
-            onClick={() => alert("Add Playlist clicked!")}
+            onClick={() => { alert("Add Playlist clicked!"); }}
             className="flex items-center text-sm font-semibold text-green-500 hover:text-green-400 transition-colors"
           >
             <FaPlus className="mr-3 h-4 w-4" /> Add Playlist
@@ -145,12 +144,12 @@ const NavBar: React.FC = () => {
   const VoiceSearchModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm z-50">
       <button
-        onClick={() => setIsVoiceSearchOpen(false)}
+        onClick={() => { setIsVoiceSearchOpen(false); }}
         className="absolute top-8 right-8 text-white hover:text-gray-400"
       >
         <FaTimes className="h-8 w-8" />
       </button>
-      <div className="text-center">
+      <div className="text-center relative">
         <div className="w-48 h-48 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-2xl">
           <div className="w-32 h-32 bg-blue-400 rounded-full animate-ping absolute opacity-50"></div>
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
@@ -196,7 +195,7 @@ const NavBar: React.FC = () => {
         {/* === LOGOUT BUTTON === */}
         <div className={`p-6 border-t ${isLightMode ? "border-gray-200" : "border-gray-800"}`}>
           <button
-            onClick={() => setShowLogoutConfirm(true)}
+            onClick={() => { setShowLogoutConfirm(true); }}
             className="flex items-center text-red-500 hover:text-red-400 text-lg"
           >
             <FaSignOutAlt className="mr-3 h-5 w-5" /> Logout
@@ -212,7 +211,7 @@ const NavBar: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); }}
               placeholder="Search for Music, Artists..."
               className={`w-full rounded-full py-2 px-4 pl-10 pr-10 focus:ring-2 focus:ring-blue-500 outline-none ${
                 isLightMode ? "bg-gray-200 text-gray-900 placeholder-gray-500" : "bg-gray-900 text-white placeholder-gray-500"
@@ -225,7 +224,7 @@ const NavBar: React.FC = () => {
             </div>
             <div
               className="absolute right-3 top-2.5 text-gray-400 hover:text-blue-500 cursor-pointer"
-              onClick={() => setIsVoiceSearchOpen(true)}
+              onClick={() => { setIsVoiceSearchOpen(true); }}
             >
               <FaMicrophone className="h-5 w-5" />
             </div>
@@ -237,7 +236,7 @@ const NavBar: React.FC = () => {
             <NavLink to="/contact-us" className={linkTextColor}>Contact</NavLink>
 
             <button
-              onClick={() => setIsLightMode(!isLightMode)}
+              onClick={() => { setIsLightMode(!isLightMode); }}
               className={`${linkTextColor} p-2 rounded-full`}
               title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
             >
