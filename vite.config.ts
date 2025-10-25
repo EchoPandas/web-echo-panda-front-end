@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    host: "127.0.0.1",
+    host: "0.0.0.0",
     port: 3000,
     allowedHosts: ['echo-panda.itedev.online']
   },
