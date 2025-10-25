@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '20'
       - run: npm install
-      - run: echo "Run Lint"
+      - run: npm run lint
 
   unit-test:
     name: Unit Tests
