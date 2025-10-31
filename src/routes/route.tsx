@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
-import MainLayout from '../layouts/MainLayout';
+import HomeLayout from '../layouts/HomeLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
@@ -9,7 +9,7 @@ import Modify from '../pages/Modify';
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <MainLayout />,
+           element: <HomeLayout />,
         children: [
             { path: '/', element: <Home /> },
             { path: '/modify', element: <Modify /> },
