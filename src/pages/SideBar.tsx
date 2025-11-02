@@ -14,7 +14,7 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("userToken");
-    navigate("/login");
+    void navigate("/login");
   };
 
   const bgClass = isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white";
@@ -64,7 +64,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
         ))}
         <div className="px-6 mt-3">
           <button
-            onClick={() => alert("Add Playlist clicked!")}
+            onClick={() => {
+              alert("Add Playlist clicked!");
+            }}
             className={`flex items-center text-sm font-semibold text-green-500 hover:text-green-400 transition-colors`}
           >
             <FaPlus className="mr-3 h-4 w-4" /> Add Playlist
@@ -89,7 +91,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
                 Yes, Log Out
               </button>
               <button
-                onClick={() => setShowLogoutConfirm(false)}
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                }}
                 className="bg-gray-600 hover:bg-gray-700 px-5 py-2 rounded-full font-medium transition-all"
               >
                 Cancel
@@ -104,7 +108,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
 
       <div className="p-6 border-t border-gray-800">
         <button
-          onClick={() => setShowLogoutConfirm(true)}
+          onClick={() => {
+            setShowLogoutConfirm(true);
+          }}
           className={`flex items-center text-lg ${
             isLightMode ? "text-red-600 hover:text-red-700" : "text-red-500 hover:text-red-400"
           }`}

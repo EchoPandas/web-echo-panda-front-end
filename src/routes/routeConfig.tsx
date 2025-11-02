@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   FaHome,
   FaRegHeart,
@@ -16,14 +15,7 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Alibum from '../pages/Alibum';
 import Discover from '../pages/Discover';
-
-// Placeholder components for routes
-const Artists = () => <div className="p-6"><h1 className="text-2xl font-bold">Artists</h1><p>Explore artists</p></div>;
-const RecentlyAdded = () => <div className="p-6"><h1 className="text-2xl font-bold">Recently Added</h1><p>Recently added songs</p></div>;
-const MostPlayed = () => <div className="p-6"><h1 className="text-2xl font-bold">Most Played</h1><p>Your most played tracks</p></div>;
-const Favorites = () => <div className="p-6"><h1 className="text-2xl font-bold">Your Favorites</h1><p>Your favorite songs</p></div>;
-const Playlist = () => <div className="p-6"><h1 className="text-2xl font-bold">Your Playlist</h1><p>Your playlists</p></div>;
-const Settings = () => <div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p>Application settings</p></div>;
+import { Artists, RecentlyAdded, MostPlayed, Favorites, Playlist, Settings } from './placeholderComponents';
 
 export interface RouteConfig {
   path: string;
