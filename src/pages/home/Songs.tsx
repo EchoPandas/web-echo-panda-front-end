@@ -8,8 +8,8 @@ interface Props {
 
 const sampleSongs = Array.from({ length: 10 }, (_, i) => ({
   id: i,
-  title: `Song ${i + 1}`,
-  artist: `Artist ${i + 1}`,
+  title: `Song ${String(i + 1)}`,
+  artist: `Artist ${String(i + 1)}`,
 }));
 
 const SongSection: React.FC<Props> = ({ title, isLightMode }) => {

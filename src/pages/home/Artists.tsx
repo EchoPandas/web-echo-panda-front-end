@@ -8,7 +8,7 @@ interface Props {
 
 const sampleArtists = Array.from({ length: 10 }, (_, i) => ({
   id: i,
-  name: `Artist ${i + 1}`,
+  name: `Artist ${String(i + 1)}`,
 }));
 
 const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {

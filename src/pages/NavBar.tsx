@@ -19,7 +19,9 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
   const VoiceSearchModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm z-50">
       <button
-        onClick={() => setIsVoiceSearchOpen(false)}
+        onClick={() => {
+          setIsVoiceSearchOpen(false);
+        }}
         className="absolute top-8 right-8 text-white hover:text-gray-400"
       >
         <FaTimes className="h-8 w-8" />
@@ -44,13 +46,13 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
        <div className="w-55 pl-5 flex items-center">
         <NavLink to="/" className="flex items-center">
           <span className="text-3xl font-extrabold tracking-wider font-orbitron">
-            <span className="relative bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
+            <span className="relative from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">
               Echo
-              <span className="absolute inset-0 blur-sm bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-40 -z-10"></span>
+              <span className="absolute inset-0 blur-sm from-blue-400 via-purple-500 to-pink-500 opacity-40 -z-10"></span>
             </span>
-            <span className="ml-2 relative bg-gradient-to-r from-pink-500 via-purple-500 to-blue-400 text-transparent bg-clip-text">
+            <span className="ml-2 relative from-pink-500 via-purple-500 to-blue-400 text-transparent bg-clip-text">
               Panda
-              <span className="absolute inset-0 blur-sm bg-gradient-to-r from-pink-500 via-purple-500 to-blue-400 opacity-40 -z-10"></span>
+              <span className="absolute inset-0 blur-sm from-pink-500 via-purple-500 to-blue-400 opacity-40 -z-10"></span>
             </span>
           </span>
         </NavLink>
@@ -64,13 +66,17 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+          }}
           placeholder="Search for Music, Artists..."
           className={`w-full rounded-full py-2 pl-12 pr-12 focus:ring-2 focus:ring-blue-500 outline-none ${inputBg} font-inter`}
         />
         <div
           className="absolute right-9 top-2 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
-          onClick={() => setIsVoiceSearchOpen(true)}
+          onClick={() => {
+            setIsVoiceSearchOpen(true);
+          }}
         >
           <FaMicrophone className="h-5 w-5" />
         </div>
@@ -92,7 +98,9 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
         </NavLink>
 
         <button
-          onClick={() => setIsLightMode(!isLightMode)}
+          onClick={() => {
+            setIsLightMode(!isLightMode);
+          }}
           className={`${linkTextColor} p-2 rounded-full transition-colors`}
           title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
         >

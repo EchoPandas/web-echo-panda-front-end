@@ -1,33 +1,12 @@
 
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaHome, FaRegHeart, FaUserFriends, FaRegClock, FaChartLine, FaCog, FaSignOutAlt, FaPlus } from "react-icons/fa";
-import { IoMdDisc } from "react-icons/io";
-import { RiPlayListFill } from "react-icons/ri";
-import { MdOutlineExplore } from "react-icons/md";
+import { FaSignOutAlt, FaPlus } from "react-icons/fa";
+import { getSidebarLinks } from "../routes/routeConfig";
 
 interface SideBarProps {
   isLightMode: boolean;
 }
-
-interface SidebarLink {
-  to: string;
-  label: string;
-  icon: React.ElementType;
-  group: "menu" | "library" | "playlist" | "general";
-}
-
-const sidebarLinks: SidebarLink[] = [
-  { to: "/", label: "Home", icon: FaHome, group: "menu" },
-  { to: "/discover", label: "Discover", icon: MdOutlineExplore, group: "menu" },
-  { to: "/albums", label: "Albums", icon: IoMdDisc, group: "menu" },
-  { to: "/artists", label: "Artists", icon: FaUserFriends, group: "menu" },
-  { to: "/recently-added", label: "Recently Added", icon: FaRegClock, group: "library" },
-  { to: "/most-played", label: "Most Played", icon: FaChartLine, group: "library" },
-  { to: "/favorites", label: "Your Favorites", icon: FaRegHeart, group: "playlist" },
-  { to: "/playlist", label: "Your Playlist", icon: RiPlayListFill, group: "playlist" },
-  { to: "/settings", label: "Settings", icon: FaCog, group: "general" },
-];
 
 const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -35,15 +14,15 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("userToken");
-    navigate("/login");
+    void navigate("/login");
   };
 
   const bgClass = isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white";
 
-  const renderLink = (link: SidebarLink) => (
-    <li key={link.to} className="px-4">
+  const renderLink = (link: ReturnType<typeof getSidebarLinks>[number]) => (
+    <li key={link.path} className="px-4">
       <NavLink
-        to={link.to}
+        to={link.path}
         className={({ isActive }) =>
           `flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
             isActive
@@ -61,15 +40,18 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
   );
 
   const renderSidebarGroups = () => {
+    const sidebarLinks = getSidebarLinks();
     const groups = {
-      menu: { title: "Menu", links: [] as SidebarLink[] },
-      library: { title: "Library", links: [] as SidebarLink[] },
-      playlist: { title: "Playlist & Favorites", links: [] as SidebarLink[] },
-      general: { title: "General", links: [] as SidebarLink[] },
+      menu: { title: "Menu", links: [] as typeof sidebarLinks },
+      library: { title: "Library", links: [] as typeof sidebarLinks },
+      playlist: { title: "Playlist & Favorites", links: [] as typeof sidebarLinks },
+      general: { title: "General", links: [] as typeof sidebarLinks },
     };
 
     sidebarLinks.forEach((link) => {
-      groups[link.group].links.push(link);
+      if (link.group in groups) {
+        groups[link.group as keyof typeof groups].links.push(link);
+      }
     });
 
     return (
@@ -82,7 +64,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
         ))}
         <div className="px-6 mt-3">
           <button
-            onClick={() => alert("Add Playlist clicked!")}
+            onClick={() => {
+              alert("Add Playlist clicked!");
+            }}
             className={`flex items-center text-sm font-semibold text-green-500 hover:text-green-400 transition-colors`}
           >
             <FaPlus className="mr-3 h-4 w-4" /> Add Playlist
@@ -107,7 +91,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
                 Yes, Log Out
               </button>
               <button
-                onClick={() => setShowLogoutConfirm(false)}
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                }}
                 className="bg-gray-600 hover:bg-gray-700 px-5 py-2 rounded-full font-medium transition-all"
               >
                 Cancel
@@ -122,7 +108,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode }) => {
 
       <div className="p-6 border-t border-gray-800">
         <button
-          onClick={() => setShowLogoutConfirm(true)}
+          onClick={() => {
+            setShowLogoutConfirm(true);
+          }}
           className={`flex items-center text-lg ${
             isLightMode ? "text-red-600 hover:text-red-700" : "text-red-500 hover:text-red-400"
           }`}

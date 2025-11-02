@@ -4,7 +4,7 @@ interface Props {
   isLightMode: boolean;
 }
 
-const HeroSection: React.FC<Props> = ({ isLightMode }) => {
+const HeroSection: React.FC<Props> = () => {
   const textColor = "text-white";
 
   return (
