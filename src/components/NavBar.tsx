@@ -3,12 +3,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 // === ICON IMPORTS ===
 import {
-  FaHome,
-  FaRegHeart,
-  FaUserFriends,
-  FaRegClock,
-  FaChartLine,
-  FaCog,
   FaSignOutAlt,
   FaPlus,
   FaTimes,
@@ -16,30 +10,7 @@ import {
   FaMoon,
   FaMicrophone,
 } from "react-icons/fa";
-import { IoMdDisc } from "react-icons/io";
-import { RiPlayListFill } from "react-icons/ri";
-import { MdOutlineExplore } from "react-icons/md";
-
-// === TYPE DEFINITIONS ===
-interface SidebarLink {
-  to: string;
-  label: string;
-  icon: React.ElementType;
-  group: "menu" | "library" | "playlist" | "general";
-}
-
-// === SIDEBAR DATA ===
-const sidebarLinks: SidebarLink[] = [
-  { to: "/", label: "Home", icon: FaHome, group: "menu" },
-  { to: "/discover", label: "Discover", icon: MdOutlineExplore, group: "menu" },
-  { to: "/albums", label: "Albums", icon: IoMdDisc, group: "menu" },
-  { to: "/artists", label: "Artists", icon: FaUserFriends, group: "menu" },
-  { to: "/recently-added", label: "Recently Added", icon: FaRegClock, group: "library" },
-  { to: "/most-played", label: "Most Played", icon: FaChartLine, group: "library" },
-  { to: "/favorites", label: "Your Favorites", icon: FaRegHeart, group: "playlist" },
-  { to: "/playlist", label: "Your Playlist", icon: RiPlayListFill, group: "playlist" },
-  { to: "/settings", label: "Settings", icon: FaCog, group: "general" },
-];
+import { getSidebarLinks } from "../routes/routeConfig";
 
 // === CONSTANTS ===
 const HEADER_CLASS = "px-6 text-xs uppercase tracking-wider";
@@ -92,10 +63,10 @@ const NavBar: React.FC = () => {
   );
 
   // === RENDER SINGLE LINK ITEM ===
-  const renderLink = (link: SidebarLink) => (
-    <li key={link.to} className="px-4">
+  const renderLink = (link: ReturnType<typeof getSidebarLinks>[number]) => (
+    <li key={link.path} className="px-4">
       <NavLink
-        to={link.to}
+        to={link.path}
         className={({ isActive }) =>
           `flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
             isActive ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50" : `${linkTextColor} ${linkHoverBg}`
@@ -110,14 +81,19 @@ const NavBar: React.FC = () => {
 
   // === RENDER SIDEBAR GROUPS ===
   const renderSidebarGroups = () => {
+    const sidebarLinks = getSidebarLinks();
     const groups = {
-      menu: { title: "Menu", links: [] as SidebarLink[] },
-      library: { title: "Library", links: [] as SidebarLink[] },
-      playlist: { title: "Playlist & Favorites", links: [] as SidebarLink[] },
-      general: { title: "General", links: [] as SidebarLink[] },
+      menu: { title: "Menu", links: [] as typeof sidebarLinks },
+      library: { title: "Library", links: [] as typeof sidebarLinks },
+      playlist: { title: "Playlist & Favorites", links: [] as typeof sidebarLinks },
+      general: { title: "General", links: [] as typeof sidebarLinks },
     };
 
-    sidebarLinks.forEach((link) => { groups[link.group].links.push(link); });
+    sidebarLinks.forEach((link) => {
+      if (link.group in groups) {
+        groups[link.group as keyof typeof groups].links.push(link);
+      }
+    });
 
     return (
       <>
