@@ -24,10 +24,16 @@ const NavBar: React.FC = () => {
   const navigate = useNavigate();
 
   // === THEME COLORS ===
-  const sidebarBg = isLightMode ? "bg-white border-gray-200" : "bg-black border-gray-900";
-  const headerBg = isLightMode ? "bg-white border-gray-200" : "bg-black border-gray-800";
+  const sidebarBg = isLightMode
+    ? "bg-white border-gray-200"
+    : "bg-black border-gray-900";
+  const headerBg = isLightMode
+    ? "bg-white border-gray-200"
+    : "bg-black border-gray-800";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
-  const linkTextColor = isLightMode ? "text-gray-600 hover:text-gray-900" : "text-gray-300 hover:text-white";
+  const linkTextColor = isLightMode
+    ? "text-gray-600 hover:text-gray-900"
+    : "text-gray-300 hover:text-white";
   const linkHoverBg = isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-800";
   const sidebarHeaderColor = isLightMode ? "text-gray-500" : "text-gray-400";
   const mainBg = isLightMode ? "bg-gray-50" : "bg-black";
@@ -43,7 +49,9 @@ const NavBar: React.FC = () => {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-gray-900 text-white rounded-2xl p-8 w-96 text-center shadow-2xl">
         <h2 className="text-2xl font-bold mb-4">Are you sure?</h2>
-        <p className="text-gray-400 mb-6">Do you really want to log out from EchoPanda?</p>
+        <p className="text-gray-400 mb-6">
+          Do you really want to log out from EchoPanda?
+        </p>
         <div className="flex justify-center gap-4">
           <button
             onClick={handleLogout}
@@ -52,7 +60,9 @@ const NavBar: React.FC = () => {
             Yes, Log Out
           </button>
           <button
-            onClick={() => { setShowLogoutConfirm(false); }}
+            onClick={() => {
+              setShowLogoutConfirm(false);
+            }}
             className="bg-gray-600 hover:bg-gray-700 px-5 py-2 rounded-full font-medium transition-all"
           >
             Cancel
@@ -69,7 +79,9 @@ const NavBar: React.FC = () => {
         to={link.path}
         className={({ isActive }) =>
           `flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-            isActive ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50" : `${linkTextColor} ${linkHoverBg}`
+            isActive
+              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50"
+              : `${linkTextColor} ${linkHoverBg}`
           }`
         }
       >
@@ -83,10 +95,23 @@ const NavBar: React.FC = () => {
   const renderSidebarGroups = () => {
     const sidebarLinks = getSidebarLinks();
     const groups = {
+      menu: { title: "Menu", links: [] as SidebarLink[] },
+      library: { title: "Library", links: [] as SidebarLink[] },
+      playlist: { title: "Playlist & Favorites", links: [] as SidebarLink[] },
+      general: { title: "General", links: [] as SidebarLink[] },
+      menu: { title: "Menu", links: [] as typeof sidebarLinks },
+      library: { title: "Library", links: [] as typeof sidebarLinks },
+      playlist: {
+        title: "Playlist & Favorites",
+        links: [] as typeof sidebarLinks,
+      },
+      general: { title: "General", links: [] as typeof sidebarLinks },
+
       menu: { title: "Menu", links: [] as typeof sidebarLinks },
       library: { title: "Library", links: [] as typeof sidebarLinks },
       playlist: { title: "Playlist & Favorites", links: [] as typeof sidebarLinks },
       general: { title: "General", links: [] as typeof sidebarLinks },
+
     };
 
     sidebarLinks.forEach((link) => {
@@ -99,14 +124,18 @@ const NavBar: React.FC = () => {
       <>
         {Object.entries(groups).map(([key, group]) => (
           <div key={key} className="mt-4">
-            <div className={`${HEADER_CLASS} ${sidebarHeaderColor}`}>{group.title}</div>
+            <div className={`${HEADER_CLASS} ${sidebarHeaderColor}`}>
+              {group.title}
+            </div>
             <ul className="mt-2 space-y-1">{group.links.map(renderLink)}</ul>
           </div>
         ))}
         {/* Add Playlist Button */}
         <div className="px-6 mt-3">
           <button
-            onClick={() => { alert("Add Playlist clicked!"); }}
+            onClick={() => {
+              alert("Add Playlist clicked!");
+            }}
             className="flex items-center text-sm font-semibold text-green-500 hover:text-green-400 transition-colors"
           >
             <FaPlus className="mr-3 h-4 w-4" /> Add Playlist
@@ -120,7 +149,9 @@ const NavBar: React.FC = () => {
   const VoiceSearchModal = () => (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm z-50">
       <button
-        onClick={() => { setIsVoiceSearchOpen(false); }}
+        onClick={() => {
+          setIsVoiceSearchOpen(false);
+        }}
         className="absolute top-8 right-8 text-white hover:text-gray-400"
       >
         <FaTimes className="h-8 w-8" />
@@ -169,9 +200,15 @@ const NavBar: React.FC = () => {
         <nav className="flex-1 overflow-y-auto">{renderSidebarGroups()}</nav>
 
         {/* === LOGOUT BUTTON === */}
-        <div className={`p-6 border-t ${isLightMode ? "border-gray-200" : "border-gray-800"}`}>
+        <div
+          className={`p-6 border-t ${
+            isLightMode ? "border-gray-200" : "border-gray-800"
+          }`}
+        >
           <button
-            onClick={() => { setShowLogoutConfirm(true); }}
+            onClick={() => {
+              setShowLogoutConfirm(true);
+            }}
             className="flex items-center text-red-500 hover:text-red-400 text-lg"
           >
             <FaSignOutAlt className="mr-3 h-5 w-5" /> Logout
@@ -181,26 +218,44 @@ const NavBar: React.FC = () => {
 
       {/* === MAIN CONTENT === */}
       <main className="flex-1 flex flex-col">
-        <header className={`h-16 flex items-center justify-between px-6 ${headerBg}`}>
+        <header
+          className={`h-16 flex items-center justify-between px-6 ${headerBg}`}
+        >
           {/* SEARCH */}
           <div className="flex-1 max-w-2xl relative">
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); }}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
               placeholder="Search for Music, Artists..."
               className={`w-full rounded-full py-2 px-4 pl-10 pr-10 focus:ring-2 focus:ring-blue-500 outline-none ${
-                isLightMode ? "bg-gray-200 text-gray-900 placeholder-gray-500" : "bg-gray-900 text-white placeholder-gray-500"
+                isLightMode
+                  ? "bg-gray-200 text-gray-900 placeholder-gray-500"
+                  : "bg-gray-900 text-white placeholder-gray-500"
               }`}
             />
             <div className="absolute left-3 top-2.5 text-gray-400">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </div>
             <div
               className="absolute right-3 top-2.5 text-gray-400 hover:text-blue-500 cursor-pointer"
-              onClick={() => { setIsVoiceSearchOpen(true); }}
+              onClick={() => {
+                setIsVoiceSearchOpen(true);
+              }}
             >
               <FaMicrophone className="h-5 w-5" />
             </div>
@@ -208,19 +263,41 @@ const NavBar: React.FC = () => {
 
           {/* TOP MENU */}
           <div className="flex items-center space-x-6 ml-6">
-            <NavLink to="/about-us" className={linkTextColor}>About Us</NavLink>
-            <NavLink to="/contact-us" className={linkTextColor}>Contact</NavLink>
+            <NavLink to="/about-us" className={linkTextColor}>
+              About Us
+            </NavLink>
+            <NavLink to="/contact-us" className={linkTextColor}>
+              Contact
+            </NavLink>
 
             <button
-              onClick={() => { setIsLightMode(!isLightMode); }}
+              onClick={() => {
+                setIsLightMode(!isLightMode);
+              }}
               className={`${linkTextColor} p-2 rounded-full`}
-              title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
+              title={
+                isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"
+              }
             >
-              {isLightMode ? <FaMoon className="h-5 w-5" /> : <FaSun className="h-5 w-5 text-yellow-500" />}
+              {isLightMode ? (
+                <FaMoon className="h-5 w-5" />
+              ) : (
+                <FaSun className="h-5 w-5 text-yellow-500" />
+              )}
             </button>
 
-            <NavLink to="/login" className="px-4 py-1 text-blue-500 hover:text-blue-400 font-medium">Login</NavLink>
-            <NavLink to="/signup" className="px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 font-medium">Sign Up</NavLink>
+            <NavLink
+              to="/login"
+              className="px-4 py-1 text-blue-500 hover:text-blue-400 font-medium"
+            >
+              Login
+            </NavLink>
+            <NavLink
+              to="/register"
+              className="px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 font-medium"
+            >
+              Sign Up
+            </NavLink>
           </div>
         </header>
 

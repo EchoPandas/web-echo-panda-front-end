@@ -7,6 +7,22 @@ interface NavBarProps {
   setIsLightMode: (value: boolean) => void;
 }
 
+export const NavBar: React.FC<NavBarProps> = ({
+  isLightMode,
+  setIsLightMode,
+}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
+
+  const headerBg = isLightMode
+    ? "bg-white border-gray-200"
+    : "bg-black border-gray-800";
+  const linkTextColor = isLightMode
+    ? "text-gray-600 hover:text-gray-900"
+    : "text-gray-300 hover:text-white";
+  const inputBg = isLightMode
+    ? "bg-gray-200 text-gray-900 placeholder-gray-500"
+    : "bg-gray-900 text-white placeholder-gray-400";
 export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
@@ -39,6 +55,13 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
   );
 
   return (
+    <header
+      className={`h-16 flex items-center justify-between border-b ${headerBg}`}
+    >
+      {isVoiceSearchOpen && <VoiceSearchModal />}
+
+      {/* LOGO */}
+      <div className="w-55 pl-5 flex items-center">
     <header className={`h-16 flex items-center justify-between border-b ${headerBg}`}>
       {isVoiceSearchOpen && <VoiceSearchModal />}
 
@@ -58,6 +81,7 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
         </NavLink>
       </div>
 
+      {/* SEARCH */}
         {/* SEARCH */}
       <div className="flex-1 max-w-2xl relative px-6">
         <div className="absolute left-9 top-2 text-gray-400">
@@ -84,12 +108,16 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
 
       {/* MENU LINKS  */}
       <div className="flex items-center space-x-8 px-8">
+        <NavLink
+          to="/about-us"
         <NavLink 
           to="/about-us" 
           className={`${linkTextColor} text-base font-medium tracking-wide font-inter hover:scale-105 transition-transform`}
         >
           About Us
         </NavLink>
+        <NavLink
+          to="/contact-us"
         <NavLink 
           to="/contact-us" 
           className={`${linkTextColor} text-base font-medium tracking-wide font-inter hover:scale-105 transition-transform`}
@@ -104,6 +132,18 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
           className={`${linkTextColor} p-2 rounded-full transition-colors`}
           title={isLightMode ? "Switch to Dark Mode" : "Switch to Light Mode"}
         >
+          {isLightMode ? (
+            <FaMoon className="h-5 w-5" />
+          ) : (
+            <FaSun className="h-5 w-5 text-yellow-500" />
+          )}
+        </button>
+        <NavLink
+          to="/login"
+          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
+            isLightMode
+              ? "text-blue-600 hover:text-blue-500"
+              : "text-blue-500 hover:text-blue-400"
           {isLightMode ? <FaMoon className="h-5 w-5" /> : <FaSun className="h-5 w-5 text-yellow-500" />}
         </button>
          <NavLink
@@ -115,6 +155,11 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
           Login
         </NavLink>
         <NavLink
+          to="/register"
+          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
+            isLightMode
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-blue-500 text-white hover:bg-blue-600"
           to="/signup"
           className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
             isLightMode ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-500 text-white hover:bg-blue-600"
@@ -126,4 +171,5 @@ export const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) =
     </header>
   );
 };
+export default NavBar;
 export default NavBar; 
