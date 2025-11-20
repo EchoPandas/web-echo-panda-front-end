@@ -1,32 +1,39 @@
-<<<<<<< Updated upstream
 import { createBrowserRouter } from 'react-router-dom';
-import MainLayout from '../layouts/MainLayout';
+import HomeLayout from '../layouts/HomeLayout';
 import AuthLayout from '../layouts/AuthLayout';
-import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Modify from '../pages/Modify';
+import { routeConfig } from './routeConfig';
+
+// Get main routes (menu, library, playlist, general) for HomeLayout
+const mainRoutes = routeConfig.filter(
+  route => 
+    ['menu', 'library', 'playlist', 'general', 'other'].includes(route.group) && 
+    route.component
+);
+
+// Get auth routes for AuthLayout
+const authRoutes = routeConfig.filter(
+  route => route.group === 'auth' && route.component
+);
 
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <MainLayout />,
-        children: [
-            { path: '/', element: <Home /> },
-            { path: '/modify', element: <Modify /> },
-        ],
+        element: <HomeLayout />,
+        children: mainRoutes.map(route => ({
+            path: route.path,
+            element: route.component ? <route.component /> : null,
+        })),
     },
     {
         path: '/',
         element: <AuthLayout />,
-        children: [
-            { path: '/login', element: <Login /> },
-            { path: '/register', element: <Register /> },
-        ],
+        children: authRoutes.map(route => ({
+            path: route.path,
+            element: route.component ? <route.component /> : null,
+        })),
     },
 ])
 export default router;
-=======
 import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../layouts/HomeLayout";
 import AuthLayout from "../layouts/AuthLayout";
@@ -69,4 +76,7 @@ const router = createBrowserRouter([
 ]);
 
 export default router;
->>>>>>> Stashed changes
+]);
+
+export default router;
+
