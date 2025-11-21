@@ -194,7 +194,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-4 bg-gradient-to-r from-purple-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/20 ${
+            className={`w-full py-4 from-purple-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/20 ${
               loading
                 ? "opacity-60 cursor-not-allowed"
                 : "hover:from-purple-600 hover:to-indigo-700 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"

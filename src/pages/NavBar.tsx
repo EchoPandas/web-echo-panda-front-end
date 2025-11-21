@@ -7,23 +7,6 @@ interface NavBarProps {
   setIsLightMode: (value: boolean) => void;
 }
 
-// export const NavBar: React.FC<NavBarProps> = ({
-//   isLightMode,
-//   setIsLightMode,
-// }) => {
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
-
-//   const headerBg = isLightMode
-//     ? "bg-white border-gray-200"
-//     : "bg-black border-gray-800";
-//   const linkTextColor = isLightMode
-//     ? "text-gray-600 hover:text-gray-900"
-//     : "text-gray-300 hover:text-white";
-//   const inputBg = isLightMode
-//     ? "bg-gray-200 text-gray-900 placeholder-gray-500"
-//     : "bg-gray-900 text-white placeholder-gray-400";
-// }
 const NavBar: React.FC<NavBarProps> = ({
   isLightMode,
   setIsLightMode,
@@ -65,13 +48,6 @@ const NavBar: React.FC<NavBarProps> = ({
   );
 
   return (
-    // <header
-    //   className={`h-16 flex items-center justify-between border-b ${headerBg}`}
-    // >
-    //   {isVoiceSearchOpen && <VoiceSearchModal />}
-
-    //   {/* LOGO */}
-    //   <div className="w-55 pl-5 flex items-center">
     <header
       className={`h-16 flex items-center justify-between border-b ${headerBg}`}
     >
@@ -146,38 +122,21 @@ const NavBar: React.FC<NavBarProps> = ({
             <FaSun className="h-5 w-5 text-yellow-500" />
           )}
         </button>
-        {/* <button>
-          <NavLink
-            to="/login"
-            // className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
-            //   isLightMode
-            //     ? "text-blue-600 hover:text-blue-500"
-            //     : "text-blue-500 hover:text-blue-400"
-            //  {isLightMode ? <FaMoon className="h-5 w-5" /> : <FaSun className="h-5 w-5 text-yellow-500" />}
-          </NavLink>
-        </button> */}
         <NavLink
           to="/login"
-          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
-            isLightMode
-              ? "text-blue-600 hover:text-blue-500"
-              : "text-blue-500 hover:text-blue-400"
-          } font-inter`}
+          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${isLightMode
+            ? "text-blue-600 hover:text-blue-500"
+            : "text-blue-500 hover:text-blue-400"
+            } font-inter`}
         >
           Login
         </NavLink>
         <NavLink
-          // to="/register"
-          // className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
-          //   isLightMode
-          //     ? "bg-blue-600 text-white hover:bg-blue-700"
-          //     : "bg-blue-500 text-white hover:bg-blue-600"
-          to="/signup"
-          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
-            isLightMode
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          } font-inter`}
+          to="/register"
+          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${isLightMode
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "bg-blue-500 text-white hover:bg-blue-600"
+            } font-inter`}
         >
           Sign Up
         </NavLink>
