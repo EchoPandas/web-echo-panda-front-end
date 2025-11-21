@@ -20,7 +20,7 @@ const Register: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleEmailRegister = async (e: React.FormEvent) => {
+  const handleEmailRegister = (e: React.FormEvent): void => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -42,8 +42,21 @@ const Register: React.FC = () => {
       // Check if user already exists in localStorage
       const existingUser = localStorage.getItem("user");
       if (existingUser) {
-        const parsed = JSON.parse(existingUser);
-        if (parsed.email === formData.email) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(existingUser);
+        } catch {
+          // If parsing fails, treat as no existing user
+          parsed = null;
+        }
+
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "email" in parsed &&
+          typeof (parsed as Record<string, unknown>).email === "string" &&
+          (parsed as Record<string, unknown>).email === formData.email
+        ) {
           setError("An account with this email already exists");
           setLoading(false);
           return;
@@ -65,22 +78,24 @@ const Register: React.FC = () => {
       console.log("Registration success - stored in localStorage", userData);
 
       // Navigate to home after successful registration
-      navigate("/");
-    } catch (error: any) {
-      console.error("Registration error", error);
+      void navigate("/");
+    } catch (err: unknown) {
+      if (err instanceof Error) console.error("Registration error", err.message);
+      else console.error("Registration error", err);
       setError("Failed to register. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleRegister = async () => {
+  const handleGoogleRegister = async (): Promise<void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Registered with Google:", result.user);
-      navigate("/");
-    } catch (err) {
-      console.error(err);
+      void navigate("/");
+    } catch (err: unknown) {
+      if (err instanceof Error) console.error(err.message);
+      else console.error(err);
       setError("Failed to sign up with Google");
     }
   };
@@ -110,7 +125,7 @@ const Register: React.FC = () => {
         {/* Google Sign Up */}
         <div className="mb-6 max-w-xl mx-auto">
           <button
-            onClick={handleGoogleRegister}
+            onClick={() => void handleGoogleRegister()}
             disabled={loading}
             className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${loading
                 ? "opacity-60 cursor-not-allowed"

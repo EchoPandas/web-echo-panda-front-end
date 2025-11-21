@@ -18,7 +18,7 @@ const Login: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailLogin = (e: React.FormEvent): void => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -31,11 +31,30 @@ const Login: React.FC = () => {
         setLoading(false);
         return;
       }
+      let userData: unknown;
+      try {
+        userData = JSON.parse(storedUser);
+      } catch {
+        setError("Stored user data is invalid. Please sign up again.");
+        setLoading(false);
+        return;
+      }
 
-      const userData = JSON.parse(storedUser);
+      // Ensure parsed data has expected shape before accessing properties
+      if (
+        typeof userData !== "object" ||
+        userData === null ||
+        !("email" in userData) ||
+        typeof (userData as Record<string, unknown>).email !== "string"
+      ) {
+        setError("Stored user data is invalid. Please sign up again.");
+        setLoading(false);
+        return;
+      }
 
       // Check if email and password match
-      if (userData.email !== formData.email) {
+      const email = (userData as Record<string, unknown>).email as string;
+      if (email !== formData.email) {
         setError("Invalid email or password");
         setLoading(false);
         return;
@@ -54,22 +73,24 @@ const Login: React.FC = () => {
       console.log("Login success", userData);
 
       // Navigate to home after successful login
-      navigate("/");
-    } catch (error: any) {
-      console.error("Login error", error);
+      void navigate("/");
+    } catch (err: unknown) {
+      if (err instanceof Error) console.error("Login error", err.message);
+      else console.error("Login error", err);
       setError("Failed to log in. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (): Promise<void> => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Logged in:", result.user);
-      navigate("/");
-    } catch (err) {
-      console.error(err);
+      void navigate("/");
+    } catch (err: unknown) {
+      if (err instanceof Error) console.error(err.message);
+      else console.error(err);
       setError("Failed to sign in with Google");
     }
   };
@@ -101,7 +122,7 @@ const Login: React.FC = () => {
         {/* Google Sign In */}
         <div className="mb-6">
           <button
-            onClick={handleGoogleLogin}
+            onClick={() => void handleGoogleLogin()}
             disabled={loading}
             className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${
               loading
