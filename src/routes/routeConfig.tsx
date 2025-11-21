@@ -4,30 +4,30 @@ import {
   FaUserFriends,
   FaRegClock,
   FaChartLine,
-  FaCog,
+  // FaCog,
   FaCog
 } from "react-icons/fa";
 import { IoMdDisc } from "react-icons/io";
 import { RiPlayListFill } from "react-icons/ri";
 import { MdOutlineExplore } from "react-icons/md";
-import Home from "../pages/Home";
-import Modify from "../pages/Modify";
-import Login from "../pages/Login1";
-import Register from "../pages/Register1";
-import Alibum from "../pages/Alibum";
-import Discover from "../pages/Discover";
-import {
-  Artists,
-  RecentlyAdded,
-  MostPlayed,
-  Favorites,
-  Playlist,
-  Settings,
-} from "./placeholderComponents";
+// import Home from "../pages/Home";
+// import Modify from "../pages/Modify";
+// import Login from "../pages/Login1";
+// import Register from "../pages/Register1";
+// import Alibum from "../pages/Alibum";
+// import Discover from "../pages/Discover";
+// import {
+//   Artists,
+//   RecentlyAdded,
+//   MostPlayed,
+//   Favorites,
+//   Playlist,
+//   Settings,
+// } from "./placeholderComponents";
 import Home from '../pages/Home';
 import Modify from '../pages/Modify';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
+import Login from '../pages/Login1';
+import Register from '../pages/Register1';
 import Alibum from '../pages/Alibum';
 import Discover from '../pages/Discover';
 import { Artists, RecentlyAdded, MostPlayed, Favorites, Playlist, Settings } from './placeholderComponents';
@@ -186,6 +186,6 @@ export const getRoutesByGroup = (
 };
 
 // Helper function to get routes by group
-export const getRoutesByGroup = (group: RouteConfig["group"]): RouteConfig[] => {
-  return routeConfig.filter(route => route.group === group && route.showInSidebar === true);
-};
+// export const getRoutesByGroup = (group: RouteConfig["group"]): RouteConfig[] => {
+//   return routeConfig.filter(route => route.group === group && route.showInSidebar === true);
+// };
