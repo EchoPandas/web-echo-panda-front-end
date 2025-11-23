@@ -1,18 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { FaSun, FaMoon, FaMicrophone, FaTimes, FaSearch } from "react-icons/fa";
+import {
+  FaSun,
+  FaMoon,
+  FaMicrophone,
+  FaTimes,
+  FaSearch,
+  FaUser,
+} from "react-icons/fa";
+import { getUserData, isAuthenticated } from "../routes/authContext";
 
 interface NavBarProps {
   isLightMode: boolean;
   setIsLightMode: (value: boolean) => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({
-  isLightMode,
-  setIsLightMode,
-}) => {
+const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const loggedIn = isAuthenticated();
+    setIsUserLoggedIn(loggedIn);
+    if (loggedIn) {
+      setUserData(getUserData());
+    }
+  }, []);
 
   const headerBg = isLightMode
     ? "bg-white border-gray-200"
@@ -122,24 +137,58 @@ const NavBar: React.FC<NavBarProps> = ({
             <FaSun className="h-5 w-5 text-yellow-500" />
           )}
         </button>
-        <NavLink
-          to="/login"
-          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${isLightMode
-            ? "text-blue-600 hover:text-blue-500"
-            : "text-blue-500 hover:text-blue-400"
-            } font-inter`}
-        >
-          Login
-        </NavLink>
-        <NavLink
-          to="/register"
-          className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${isLightMode
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-blue-500 text-white hover:bg-blue-600"
-            } font-inter`}
-        >
-          Sign Up
-        </NavLink>
+
+        {isUserLoggedIn ? (
+          <NavLink
+            to="/profile"
+            className="flex items-center gap-2 px-4 py-2 rounded-full transition-all hover:scale-105"
+            title="Profile"
+          >
+            {userData?.photoURL ? (
+              <img
+                src={userData.photoURL}
+                alt="Profile"
+                className="w-8 h-8 rounded-full border-2 border-blue-500"
+              />
+            ) : (
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  isLightMode ? "bg-blue-600" : "bg-blue-500"
+                }`}
+              >
+                <FaUser className="text-white text-sm" />
+              </div>
+            )}
+            <span
+              className={`${linkTextColor} text-base font-medium font-inter`}
+            >
+              {userData?.displayName || userData?.username || "Profile"}
+            </span>
+          </NavLink>
+        ) : (
+          <>
+            <NavLink
+              to="/login"
+              className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
+                isLightMode
+                  ? "text-blue-600 hover:text-blue-500"
+                  : "text-blue-500 hover:text-blue-400"
+              } font-inter`}
+            >
+              Login
+            </NavLink>
+            <NavLink
+              to="/register"
+              className={`px-6 py-2 text-base font-medium rounded-full transition-all hover:scale-105 ${
+                isLightMode
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              } font-inter`}
+            >
+              Sign Up
+            </NavLink>
+          </>
+        )}
       </div>
     </header>
   );

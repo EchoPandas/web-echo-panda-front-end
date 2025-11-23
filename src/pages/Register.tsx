@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../routes/firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import BgImage from "../assets/registerBG.png";
+import { SignInWithGoogle, registerWithEmail } from "../routes/authContext";
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -25,63 +24,24 @@ const Register: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Check if user already exists in localStorage
-      const existingUser = localStorage.getItem("user");
-      if (existingUser) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(existingUser);
-        } catch {
-          // If parsing fails, treat as no existing user
-          parsed = null;
-        }
+      const result = registerWithEmail(
+        formData.username,
+        formData.email,
+        formData.password,
+        formData.confirmPassword
+      );
 
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          "email" in parsed &&
-          typeof (parsed as Record<string, unknown>).email === "string" &&
-          (parsed as Record<string, unknown>).email === formData.email
-        ) {
-          setError("An account with this email already exists");
-          setLoading(false);
-          return;
-        }
+      if (!result.success) {
+        setError(result.error || "Failed to register");
+        setLoading(false);
+        return;
       }
 
-      // Store user data in localStorage (temporary until backend is ready)
-      const userData = {
-        username: formData.username,
-        email: formData.email,
-        registeredAt: new Date().toISOString(),
-      };
-
-      // Save to localStorage
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("userPassword", formData.password); // Store password securely
-      localStorage.setItem("isAuthenticated", "true");
-
-      console.log("Registration success - stored in localStorage", userData);
-
-      // Navigate to home after successful registration
+      console.log("Registration success", result.user);
       void navigate("/");
     } catch (err: unknown) {
-      if (err instanceof Error) console.error("Registration error", err.message);
-      else console.error("Registration error", err);
+      if (err instanceof Error) console.error("Registration error", err);
       setError("Failed to register. Please try again.");
     } finally {
       setLoading(false);
@@ -89,14 +49,18 @@ const Register: React.FC = () => {
   };
 
   const handleGoogleRegister = async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("Registered with Google:", result.user);
+      const user = await SignInWithGoogle();
+      console.log("Google registration success:", user);
       void navigate("/");
-    } catch (err: unknown) {
-      if (err instanceof Error) console.error(err.message);
-      else console.error(err);
-      setError("Failed to sign up with Google");
+    } catch (err) {
+      console.error("Failed to register with Google", err);
+      setError("Failed to register with Google. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,10 +91,11 @@ const Register: React.FC = () => {
           <button
             onClick={() => void handleGoogleRegister()}
             disabled={loading}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${loading
+            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${
+              loading
                 ? "opacity-60 cursor-not-allowed"
                 : "hover:bg-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-              }`}
+            }`}
           >
             {!loading && (
               <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -255,10 +220,11 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={` p-6 mt-6  py-4 bg-white text-gray-800 rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/90 ${loading
+              className={` p-6 mt-6  py-4 bg-white text-gray-800 rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/90 ${
+                loading
                   ? "opacity-60 cursor-not-allowed"
                   : "hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
-                }`}
+              }`}
             >
               {loading ? "Creating Account..." : "Create Account"}
             </button>
