@@ -69,10 +69,10 @@ jobs:
           node-version: '18'
       - run: npm install
       - run: echo "Run Build"
-      # - run: npm run build
+      - run: npm run build
 
   deploy:
-    name: Deploy
+    name: Check Status
     runs-on: ubuntu-22.04
     needs: build
     steps:
