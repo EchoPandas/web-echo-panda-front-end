@@ -49,9 +49,17 @@ const Login: React.FC = () => {
       const user = await SignInWithGoogle();
       console.log("Google login success:", user);
       void navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to login with Google", err);
-      setError("Failed to login with Google. Please try again.");
+
+      // Handle popup closed by user
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError(null); // Don't show error, user intentionally closed popup
+      } else if (err?.code === "auth/cancelled-popup-request") {
+        setError(null); // Another popup was opened, ignore
+      } else {
+        setError("Failed to login with Google. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

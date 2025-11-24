@@ -8,7 +8,7 @@ import {
   FaSearch,
   FaUser,
 } from "react-icons/fa";
-import { getUserData, isAuthenticated } from "../routes/authContext";
+import { getCurrentUser, isAuthenticated } from "../routes/authContext";
 
 interface NavBarProps {
   isLightMode: boolean;
@@ -25,7 +25,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
     const loggedIn = isAuthenticated();
     setIsUserLoggedIn(loggedIn);
     if (loggedIn) {
-      setUserData(getUserData());
+      setUserData(getCurrentUser());
     }
   }, []);
 

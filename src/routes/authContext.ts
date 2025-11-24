@@ -107,7 +107,8 @@ export function signOut(): void {
   localStorage.removeItem("userPassword");
 }
 
-// Get Current User
+//+++++++++++++++++++++++++++++=++++++++++++++
+// for storing user data and can be easily call from other page
 export function getCurrentUser(): UserData | null {
   const isAuthenticated = localStorage.getItem("isAuthenticated");
   if (isAuthenticated !== "true") {
@@ -125,12 +126,4 @@ export function getCurrentUser(): UserData | null {
 // Check if user is authenticated
 export function isAuthenticated(): boolean {
   return localStorage.getItem("isAuthenticated") === "true";
-}
-
-//+++++++++++++++++++++++++++++=++++++++++++++
-// for storing user data and can be easily call from other page
-export function getUserData() {
-  const data = localStorage.getItem("user");
-  if (!data) return null;
-  return JSON.parse(data);
 }
