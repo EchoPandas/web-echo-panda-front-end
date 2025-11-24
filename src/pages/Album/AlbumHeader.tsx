@@ -1,5 +1,5 @@
 import React from "react";
-import { albums } from "./AlbumData";
+import { albums } from "./albumData";
 
 export default function AlbumHeader() {
   return (

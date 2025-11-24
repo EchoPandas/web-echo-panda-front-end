@@ -1,5 +1,5 @@
 import React from "react";
-import { AlbumItem } from "./AlbumData";
+import { AlbumItem } from "./albumData";
 
 interface Props {
   album: AlbumItem;
