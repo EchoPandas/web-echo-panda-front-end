@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../routes/firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import BgImage from "../assets/loginBG.jpg";
+import { SignInWithGoogle, signInWithEmail } from "../routes/authContext";
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -24,59 +23,18 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      // Check if user exists in localStorage
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser) {
-        setError("No account found. Please sign up first.");
-        setLoading(false);
-        return;
-      }
-      let userData: unknown;
-      try {
-        userData = JSON.parse(storedUser);
-      } catch {
-        setError("Stored user data is invalid. Please sign up again.");
+      const result = signInWithEmail(formData.email, formData.password);
+
+      if (!result.success) {
+        setError(result.error || "Failed to log in");
         setLoading(false);
         return;
       }
 
-      // Ensure parsed data has expected shape before accessing properties
-      if (
-        typeof userData !== "object" ||
-        userData === null ||
-        !("email" in userData) ||
-        typeof (userData as Record<string, unknown>).email !== "string"
-      ) {
-        setError("Stored user data is invalid. Please sign up again.");
-        setLoading(false);
-        return;
-      }
-
-      // Check if email and password match
-      const email = (userData as Record<string, unknown>).email as string;
-      if (email !== formData.email) {
-        setError("Invalid email or password");
-        setLoading(false);
-        return;
-      }
-
-      // Check password from localStorage
-      const storedPassword = localStorage.getItem("userPassword");
-      if (!storedPassword || storedPassword !== formData.password) {
-        setError("Invalid email or password");
-        setLoading(false);
-        return;
-      }
-
-      // Set authentication
-      localStorage.setItem("isAuthenticated", "true");
-      console.log("Login success", userData);
-
-      // Navigate to home after successful login
+      console.log("Login success", result.user);
       void navigate("/");
     } catch (err: unknown) {
-      if (err instanceof Error) console.error("Login error", err.message);
-      else console.error("Login error", err);
+      if (err instanceof Error) console.error("Login error", err);
       setError("Failed to log in. Please try again.");
     } finally {
       setLoading(false);
@@ -84,14 +42,18 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("Logged in:", result.user);
+      const user = await SignInWithGoogle();
+      console.log("Google login success:", user);
       void navigate("/");
-    } catch (err: unknown) {
-      if (err instanceof Error) console.error(err.message);
-      else console.error(err);
-      setError("Failed to sign in with Google");
+    } catch (err) {
+      console.error("Failed to login with Google", err);
+      setError("Failed to login with Google. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,10 +118,10 @@ const Login: React.FC = () => {
 
         {/* Divider */}
         <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
+          <div className=" flex items-center">
             <div className="w-full border-t border-white/30"></div>
           </div>
-          <div className="relative flex justify-center text-sm">
+          <div className="relative mt-2 flex justify-center text-sm">
             <span className="px-4 bg-transparent text-white/70 font-medium">
               Or sign in with email
             </span>
