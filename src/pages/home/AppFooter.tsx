@@ -12,7 +12,7 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
 
   return (
     <footer className={`${bgClass} w-full border-t border-gray-700`}>
-      <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-6 gap-8 px-6 py-12">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-6 gap-8 px-6 py-12">
 
         {/* About - Wide */}
         <div className="lg:col-span-2">
@@ -62,7 +62,7 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
 
         {/* Branding & Social */}
         <div className="flex flex-col justify-between">
-          <h3 className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-500 text-xl">
+          <h3 className="font-extrabold text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-blue-500 text-xl">
             EchoPanda
           </h3>
 

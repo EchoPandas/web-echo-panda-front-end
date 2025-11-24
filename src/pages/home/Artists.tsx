@@ -22,7 +22,7 @@ const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
         {sampleArtists.map((artist) => (
           <div
             key={artist.id}
-            className="flex flex-col items-center flex-shrink-0 w-32"
+            className="flex flex-col items-center shrink-0 w-32"
           >
             <div className="h-32 w-32 rounded-full bg-gray-500 mb-2 hover:scale-105 transition"></div>
             <p className="text-center">{artist.name}</p>
