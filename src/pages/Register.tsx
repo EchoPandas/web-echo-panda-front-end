@@ -56,9 +56,17 @@ const Register: React.FC = () => {
       const user = await SignInWithGoogle();
       console.log("Google registration success:", user);
       void navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to register with Google", err);
-      setError("Failed to register with Google. Please try again.");
+
+      // Handle popup closed by user
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError(null); // Don't show error, user intentionally closed popup
+      } else if (err?.code === "auth/cancelled-popup-request") {
+        setError(null); // Another popup was opened, ignore
+      } else {
+        setError("Failed to register with Google. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -247,5 +255,4 @@ const Register: React.FC = () => {
     </div>
   );
 };
-
 export default Register;
