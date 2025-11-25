@@ -1,4 +1,3 @@
-// src/pages/Artists.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
@@ -8,14 +7,18 @@ interface Props {
   isLightMode: boolean;
 }
 
-const sampleArtists = Array.from({ length: 10 }, (_, i) => ({
+const sampleAlbums = Array.from({ length: 10 }, (_, i) => ({
   id: i,
-  name: `Artist ${String(i + 1)}`,
+  title: `Album ${String(i + 1)}`,
+  artist: `Artist ${String(i + 1)}`,
 }));
 
-const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
+const AlbumSection: React.FC<Props> = ({ title, isLightMode }) => {
   const bgClass = isLightMode ? "bg-gray-50" : "bg-gray-900";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
+  const btnClass = isLightMode
+    ? "bg-gray-200 text-gray-900 hover:bg-gray-300"
+    : "bg-gray-700 text-white hover:bg-gray-600";
   const circleClass = isLightMode
     ? "bg-gray-200 text-gray-900 border-gray-300"
     : "bg-gray-800 text-white border-gray-700";
@@ -24,24 +27,26 @@ const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
   return (
     <section className={`${bgClass} p-4 rounded-lg`}>
       <h2 className={`text-2xl font-bold mb-4 ${textColor}`}>{title}</h2>
+      {/* scrolling row: keep full width, inner flex with w-max so items scroll */}
       <div className="w-full">
         <div className="w-full overflow-x-auto py-2">
           <div className="flex space-x-4 w-max px-1 items-stretch">
-            {sampleArtists.map((artist) => (
+            {sampleAlbums.map((album) => (
               <div
-                key={artist.id}
-                className="flex flex-col items-center flex-shrink-0 w-32 p-3 rounded-lg bg-gray-800/60 hover:bg-gray-700/60 transition"
+                key={album.id}
+                className="min-w-[200px] p-4 rounded-lg bg-gray-700 text-white flex-shrink-0 hover:scale-105 transition"
               >
-                <div className="h-32 w-32 rounded-full bg-gray-500 mb-2 hover:scale-105 transition"></div>
-                <p className="text-center text-sm text-gray-200 truncate w-28">{artist.name}</p>
+                <div className="h-32 bg-gray-500 rounded-lg mb-2"></div>
+                <h3 className="font-semibold">{album.title}</h3>
+                <p className="text-sm text-gray-300">{album.artist}</p>
               </div>
             ))}
-            {/* final "View All" card */}
+            {/* "View All" card at end of row */}
             <div className="min-w-[140px] p-4 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
               <button
-                aria-label="View all artists"
+                aria-label="View all albums"
                 type="button"
-                onClick={() => navigate("/artists")}
+                onClick={() => navigate("/albums")}
                 className={`w-12 h-12 rounded-full flex items-center justify-center border ${circleClass} transition-transform hover:scale-105`}
               >
                 <FaEye size={16} />
@@ -55,4 +60,4 @@ const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
   );
 };
 
-export default ArtistSection;
+export default AlbumSection;
