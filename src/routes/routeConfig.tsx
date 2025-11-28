@@ -16,6 +16,7 @@ import Register from "../pages/Register";
 import Alibum from "../pages/Alibum";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
+import AboutUs from "../pages/AboutUs";
 import {
   Artists,
   RecentlyAdded,
@@ -28,7 +29,7 @@ import {
 export interface RouteConfig {
   path: string;
   label: string;
-  icon: React.ElementType;
+  icon: React.ElementType | null;
   component?: React.ComponentType;
   group: "menu" | "library" | "playlist" | "general" | "auth" | "other";
   requiresAuth?: boolean;
@@ -130,6 +131,14 @@ export const routeConfig: RouteConfig[] = [
     component: Profile,
     group: "general",
     showInSidebar: false,
+  },
+  {
+    path: "/aboutUs",
+    label: "AboutUs",
+    group: "general",
+    component: AboutUs,
+    showInSidebar: false,
+    icon: null,
   },
 
   // Auth routes
