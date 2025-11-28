@@ -16,6 +16,7 @@ import Register from "../pages/Register";
 import Alibum from "../pages/Alibum";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
+import Artist from "../pages/Artist";
 import {
   Artists,
   RecentlyAdded,
@@ -62,10 +63,10 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
   {
-    path: "/artists",
+    path: "/artist",
     label: "Artists",
     icon: FaUserFriends,
-    component: Artists,
+    component: Artist,
     group: "menu",
     showInSidebar: true,
   },
