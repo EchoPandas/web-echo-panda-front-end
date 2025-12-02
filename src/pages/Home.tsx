@@ -7,8 +7,7 @@ import AppFooter from './home/AppFooter';
 import ContactUs from './home/ContactUs';
 
 const Home: React.FC = () => {
-  // For this component, we'll assume lightMode false for now
-  // You might want to pass isLightMode as a prop or use context
+ 
   const isLightMode = false;
 
   return (
