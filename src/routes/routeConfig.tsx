@@ -18,6 +18,7 @@ import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
 import AboutUs from "../pages/AboutUs";
+import ContactUs from "../pages/ContactUs";
 import {
   Artists,
   RecentlyAdded,
@@ -138,6 +139,14 @@ export const routeConfig: RouteConfig[] = [
     label: "AboutUs",
     group: "general",
     component: AboutUs,
+    showInSidebar: false,
+    icon: null,
+  },
+  {
+    path: "/contact-us",
+    label: "ContactUs",
+    group: "general",
+    component: ContactUs,
     showInSidebar: false,
     icon: null,
   },
