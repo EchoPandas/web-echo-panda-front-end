@@ -75,14 +75,7 @@ const AboutUs: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center text-center min-h-screen px-4">
-        {/* Navigation / Menu */}
-        <ul className="flex flex-row gap-5 justify-center mb-10">
-          <li>Products</li>
-          <li>Vision</li>
-          <li>Contact</li>
-          <li>About</li>
-        </ul>
+      <div className="flex flex-col min-h-screen w-full">
 
         {/* Hero Text */}
         <p className="font-bold text-3xl md:text-5xl mb-6">

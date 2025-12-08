@@ -18,6 +18,9 @@ import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
 import AboutUs from "../pages/AboutUs";
+import ContactUs from "../pages/home/ContactUs";
+import Songs from "../pages/home/Songs";
+
 import {
   Artists,
   RecentlyAdded,
@@ -141,6 +144,14 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
     icon: null,
   },
+  {
+  path: "/ContactUs",
+  label: "Contact Us",
+  component: ContactUs,
+  group: "general",
+  showInSidebar: false,
+  icon: null,
+},
 
   // Auth routes
   {
@@ -159,6 +170,14 @@ export const routeConfig: RouteConfig[] = [
     group: "auth",
     showInSidebar: false,
   },
+  {
+  path: "/Songs",
+  label: "Songs",
+  component: Songs,
+  group: "general",
+  showInSidebar: false,
+  icon: null,
+}
 ];
 
 // Helper function to get sidebar links
