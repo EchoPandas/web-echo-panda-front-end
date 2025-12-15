@@ -97,11 +97,11 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       </div>
 
       {/* Desktop Menu */}
-      <div className="hidden md:flex items-center space-x-4">
+      <div className="hidden md:flex items-center space-x-15">
         <NavLink to="/AboutUs" className={linkTextColor}>
           About Us
         </NavLink>
-        <NavLink to="/contact-us" className={linkTextColor}>
+        <NavLink to="/ContactUs" className={linkTextColor}>
           Contact
         </NavLink>
 
@@ -171,7 +171,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
             </NavLink>
 
             <NavLink
-              to="/contact-us"
+              to="/ContactUs"
               className="dropdown-item"
               onClick={() => setIsMobileMenuOpen(false)}
             >

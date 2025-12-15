@@ -1,7 +1,7 @@
 import React from "react";
 
 interface Props {
-  isLightMode: boolean;
+  isLightMode?: boolean; 
 }
 
 const ContactUs: React.FC<Props> = ({ isLightMode }) => {

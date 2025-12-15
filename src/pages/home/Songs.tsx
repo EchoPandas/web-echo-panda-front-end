@@ -1,8 +1,8 @@
 import React from "react";
 
 interface Props {
-  title: string;
-  isLightMode: boolean;
+  title?: string;
+  isLightMode?: boolean;
 }
 
 const sampleSongs = Array.from({ length: 10 }, (_, i) => ({
@@ -10,8 +10,10 @@ const sampleSongs = Array.from({ length: 10 }, (_, i) => ({
   title: `Song ${i + 1}`,
   artist: `Artist ${i + 1}`,
 }));
-
-const SongSection: React.FC<Props> = ({ title, isLightMode }) => {
+const SongSection: React.FC<Props> = ({
+  title = "Songs",
+  isLightMode = true
+}) => {
   const bgClass = isLightMode ? "bg-gray-50" : "bg-gray-900";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
   const cardBg = isLightMode ? "bg-gray-200" : "bg-gray-700";

@@ -1,5 +1,7 @@
 import React from "react";
 import { FaFacebook, FaInstagram, FaYoutube, FaTiktok, FaTwitter } from "react-icons/fa";
+import { Link } from "react-router-dom";
+
 
 interface Props {
   isLightMode: boolean;
@@ -28,37 +30,47 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
         </div>
 
         {/* Melodies */}
-        <div>
-          <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>Melodies</h3>
-          <ul className="space-y-1 text-sm">
-            <li><a className={linkColor}>Songs</a></li>
-            <li><a className={linkColor}>Radio</a></li>
-            <li><a className={linkColor}>Podcast</a></li>
-          </ul>
-        </div>
+          <div>
+            <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>
+              Melodies
+            </h3>
+            <ul className="space-y-1 text-sm">
+              <li><Link to="/" className={linkColor}>Songs</Link></li>
+              <li><Link to="/radio" className={linkColor}>Radio</Link></li>
+              <li><Link to="/podcast" className={linkColor}>Podcast</Link></li>
+            </ul>
+          </div>
+
+
 
         {/* Access */}
         <div>
-          <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>Access</h3>
+          <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>
+            Access
+          </h3>
           <ul className="space-y-1 text-sm">
-            <li><a className={linkColor}>Explore</a></li>
-            <li><a className={linkColor}>Artists</a></li>
-            <li><a className={linkColor}>Playlists</a></li>
-            <li><a className={linkColor}>Albums</a></li>
-            <li><a className={linkColor}>Trending</a></li>
+            <li><Link to="/Discover" className={linkColor}>Explore</Link></li>
+            <li><Link to="/artist" className={linkColor}>Artists</Link></li>
+            <li><Link to="/playlist" className={linkColor}>Playlists</Link></li>
+            <li><Link to="/albums" className={linkColor}>Albums</Link></li>
+            <li><Link to="/most-played" className={linkColor}>Trending</Link></li>
           </ul>
         </div>
 
+
         {/* Contact */}
-        <div>
-          <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>Contact</h3>
-          <ul className="space-y-1 text-sm">
-            <li><a className={linkColor}>About</a></li>
-            <li><a className={linkColor}>Policy</a></li>
-            <li><a className={linkColor}>Social Media</a></li>
-            <li><a className={linkColor}>Support</a></li>
-          </ul>
-        </div>
+          <div>
+            <h3 className={`font-semibold text-lg mb-3 border-b border-gray-600 w-fit ${textColor}`}>
+              Contact
+            </h3>
+            <ul className="space-y-1 text-sm">
+              <li><Link to="/AboutUs" className={linkColor}>About</Link></li>
+              <li><Link to="/policy" className={linkColor}>Policy</Link></li>
+              <li><Link to="/social" className={linkColor}>Social Media</Link></li>
+              <li><Link to="/support" className={linkColor}>Support</Link></li>
+            </ul>
+          </div>
+
 
         {/* Branding & Social */}
         <div className="flex flex-col justify-between">
