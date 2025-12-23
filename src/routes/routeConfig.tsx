@@ -18,14 +18,9 @@ import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
 import AboutUs from "../pages/AboutUs";
-import {
-  Artists,
-  RecentlyAdded,
-  MostPlayed,
-  Favorites,
-  Playlist,
-  Settings,
-} from "./placeholderComponents";
+import RecentlyAdded from "../pages/RecentlyAdded";
+import MostPlayed from "../pages/MostPlayed";
+import { Favorites, Playlist, Settings } from "./placeholderComponents";
 
 export interface RouteConfig {
   path: string;
