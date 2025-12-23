@@ -18,17 +18,9 @@ import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
 import AboutUs from "../pages/AboutUs";
-import ContactUs from "../pages/home/ContactUs";
-import Songs from "../pages/home/Songs";
-
-import {
-  Artists,
-  RecentlyAdded,
-  MostPlayed,
-  Favorites,
-  Playlist,
-  Settings,
-} from "./placeholderComponents";
+import RecentlyAdded from "../pages/RecentlyAdded";
+import MostPlayed from "../pages/MostPlayed";
+import { Favorites, Playlist, Settings } from "./placeholderComponents";
 
 export interface RouteConfig {
   path: string;
@@ -145,13 +137,13 @@ export const routeConfig: RouteConfig[] = [
     icon: null,
   },
   {
-  path: "/ContactUs",
-  label: "Contact Us",
-  component: ContactUs,
-  group: "general",
-  showInSidebar: false,
-  icon: null,
-},
+    path: "/ContactUs",
+    label: "Contact Us",
+    component: ContactUs,
+    group: "general",
+    showInSidebar: false,
+    icon: null,
+  },
 
   // Auth routes
   {
@@ -171,13 +163,13 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
   },
   {
-  path: "/Songs",
-  label: "Songs",
-  component: Songs,
-  group: "general",
-  showInSidebar: false,
-  icon: null,
-}
+    path: "/Songs",
+    label: "Songs",
+    component: Songs,
+    group: "general",
+    showInSidebar: false,
+    icon: null,
+  },
 ];
 
 // Helper function to get sidebar links
