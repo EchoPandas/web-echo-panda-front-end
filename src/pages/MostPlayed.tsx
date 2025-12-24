@@ -1,7 +1,7 @@
 import React from "react";
 import SongDiscoverSection from "./discover/SongDiscovers";
-import AlbumCard from "./Album/AlbumCard";
-import { albums } from "./Album/albumData";
+import { albums } from "../components/AlbumSampleData";
+import AlbumCard from "../components/AlbumCard";
 
 const MostPlayed: React.FC = () => {
   return (
@@ -14,9 +14,9 @@ const MostPlayed: React.FC = () => {
           <h2 className="text-2xl font-bold text-white mb-6">
             Most Played Albums
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5  gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {albums.slice(0, 10).map((album) => (
-              <AlbumCard key={album.id} album={album} isLightMode={false} />
+              <AlbumCard key={album.id} album={album} />
             ))}
           </div>
         </div>

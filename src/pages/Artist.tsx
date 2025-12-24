@@ -9,16 +9,16 @@ import PlaylistSection from "./artist/PlaylistSection";
 import FansAlsoListen from "./artist/FansAlsoListen";
 
 const Artist: React.FC = () => {
-  const isLightMode = false; 
+  const isLightMode = false;
   return (
     <>
       <HeroBanner />
       <div className="space-y-10 p-6 text-white">
-        <PopularSongs />          
-        <AlbumsSection />         
-        <SingleSongs />           
-        <PlaylistSection />       
-        <FansAlsoListen />         
+        <PopularSongs />
+        <AlbumsSection />
+        <SingleSongs />
+        <PlaylistSection />
+        <FansAlsoListen />
       </div>
       <AppFooter isLightMode={isLightMode} />
     </>
