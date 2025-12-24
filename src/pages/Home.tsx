@@ -11,7 +11,7 @@ const Home: React.FC = () => {
   const isLightMode = false;
 
   return (
-    <>
+    <div className="w-full max-w-full">
       {/* Hero */}
       <HeroSection isLightMode={isLightMode} />
 
@@ -26,10 +26,12 @@ const Home: React.FC = () => {
       <SongSection title="Mood Playlists" isLightMode={isLightMode} />
 
       {/* Contact Us */}
-      <ContactUs isLightMode={isLightMode} />
+      <div className="mb-12">
+        <ContactUs isLightMode={isLightMode} />
+      </div>
       {/* Footer */}
       <AppFooter isLightMode={isLightMode} />
-    </>
+    </div>
   );
 };
 

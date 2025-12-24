@@ -8,6 +8,7 @@ import {
   FaSearch,
   FaUser,
   FaBars,
+  FaArrowRight,
 } from "react-icons/fa";
 import { getCurrentUser, isAuthenticated } from "../routes/authContext";
 
@@ -22,6 +23,58 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceText, setVoiceText] = useState("");
+  const [displayText, setDisplayText] = useState("");
+  const [hasSpoken, setHasSpoken] = useState(false);
+
+  // Initialize Web Speech API
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+  const recognitionRef = React.useRef<any>(null);
+
+  useEffect(() => {
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "en-US";
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+        setVoiceText("");
+        setDisplayText("");
+        setHasSpoken(false);
+      };
+
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const fullText = finalTranscript + interimTranscript;
+        setVoiceText(fullText.trim());
+        setHasSpoken(true);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     const loggedIn = isAuthenticated();
@@ -30,6 +83,82 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       setUserData(getCurrentUser());
     }
   }, []);
+
+  useEffect(() => {
+    if (!voiceText) {
+      setDisplayText("");
+      return;
+    }
+    const duration = 1.2; 
+    let rafId: number | null = null;
+    const start = performance.now();
+
+    const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t); 
+
+    const step = (now: number) => {
+      const elapsedSec = (now - start) / 1000;
+      let progress = Math.min(elapsedSec / duration, 1);
+      progress = easeOutQuad(progress); 
+      const chars = Math.floor(progress * voiceText.length);
+      setDisplayText(voiceText.slice(0, chars));
+
+      if (progress < 1) {
+        rafId = requestAnimationFrame(step);
+      } else {
+        // finished
+        setDisplayText(voiceText);
+        if (!isListening && voiceText.trim()) {
+          setTimeout(() => {
+            handleAutoSearch(voiceText.trim());
+          }, 800);
+        }
+      }
+    };
+
+    rafId = requestAnimationFrame(step);
+
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
+  }, [voiceText, isListening]);
+
+  useEffect(() => {
+    if (isVoiceSearchOpen && !isListening) {
+      startVoiceSearch();
+    }
+  }, [isVoiceSearchOpen]);
+
+  const startVoiceSearch = () => {
+    if (recognitionRef.current && !isListening) {
+      setVoiceText("");
+      setDisplayText("");
+      recognitionRef.current.start();
+    }
+  };
+
+  const stopVoiceSearch = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  const handleAutoSearch = (query: string) => {
+    if (query.trim()) {
+      setSearchQuery(query);
+      performSearch(query);
+      setTimeout(() => {
+        setIsVoiceSearchOpen(false);
+        setVoiceText("");
+        setDisplayText("");
+        setHasSpoken(false);
+      }, 1200);
+    }
+  };
+
+  const performSearch = (query: string) => {
+    console.log("Searching for:", query);
+    //------------------------------------
+  };
 
   const headerBg = isLightMode
     ? "bg-white border-gray-200"
@@ -43,21 +172,58 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
 
   // Voice search modal
   const VoiceSearchModal = () => (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm z-50">
+    <div className="fixed inset-0 bg-black/95 flex items-center justify-center backdrop-blur-sm z-50">
       <button
-        onClick={() => setIsVoiceSearchOpen(false)}
-        className="absolute top-8 right-8 text-white hover:text-gray-400"
+        onClick={() => {
+          setIsVoiceSearchOpen(false);
+          stopVoiceSearch();
+        }}
+        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors"
       >
         <FaTimes className="h-8 w-8" />
       </button>
-      <div className="text-center relative">
-        <div className="w-48 h-48 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-2xl">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
-            <FaMicrophone className="h-10 w-10 text-blue-600" />
+      <div className="relative w-full h-screen flex flex-col items-center justify-center px-8">
+        {/* Fixed center area for mic and status */}
+        <div className="flex flex-col items-center gap-6">
+          <div
+            className={`w-56 h-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
+              isListening
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse scale-110"
+                : hasSpoken
+                ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                : "bg-gradient-to-r from-gray-700 to-gray-800"
+            }`}
+          >
+            <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-lg">
+              <FaMicrophone
+                className={`h-12 w-12 transition-colors ${
+                  isListening
+                    ? "text-blue-600 animate-bounce"
+                    : hasSpoken
+                    ? "text-green-600"
+                    : "text-gray-400"
+                }`}
+              />
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-white text-3xl font-bold">
+              {isListening ? "🎤 Listening..." : hasSpoken ? "✓ Got it!" : "Ready to speak"}
+            </p>
+            <p className="text-gray-400 mt-2 text-lg">Search songs by voice</p>
           </div>
         </div>
-        <p className="text-white text-2xl mt-8">Listening...</p>
-        <p className="text-gray-400 mt-2">Try saying a song or artist name.</p>
+
+        {displayText && (
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-900/40 to-purple-900/40 p-8 rounded-2xl max-w-xl border border-blue-500/30 backdrop-blur animate-in fade-in duration-500">
+            <p className="text-gray-400 text-sm mb-4">You said:</p>
+            <p className="text-white text-2xl font-semibold leading-relaxed break-words">
+              {displayText}
+              {isListening && <span className="animate-pulse">|</span>}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -85,14 +251,34 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && searchQuery.trim()) {
+              performSearch(searchQuery);
+            }
+          }}
           placeholder="Search..."
-          className={`w-full rounded-full py-2 pl-10 pr-10 focus:ring-2 focus:ring-blue-500 ${inputBg}`}
+          className={`w-full rounded-full py-2 pl-10 pr-12 focus:ring-2 focus:ring-blue-500 ${inputBg}`}
         />
-        <div
-          className="absolute right-3 top-3 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
-          onClick={() => setIsVoiceSearchOpen(true)}
-        >
-          <FaMicrophone />
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {searchQuery.trim() ? (
+            <div
+              className="text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
+              onClick={() => {
+                performSearch(searchQuery);
+              }}
+              title="Search"
+            >
+              <FaArrowRight />
+            </div>
+          ) : (
+            <div
+              className="text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
+              onClick={() => setIsVoiceSearchOpen(true)}
+              title="Voice search"
+            >
+              <FaMicrophone />
+            </div>
+          )}
         </div>
       </div>
 
