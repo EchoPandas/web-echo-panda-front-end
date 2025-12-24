@@ -4,7 +4,7 @@ import HeroSection from './home/HeroSection';
 import SongSection from './home/Songs';
 import ArtistSection from './home/Artists';
 import AppFooter from './home/AppFooter';
-import ContactUs from './home/ContactUs';
+import ContactUs from './ContactUs';
 
 const Home: React.FC = () => {
  

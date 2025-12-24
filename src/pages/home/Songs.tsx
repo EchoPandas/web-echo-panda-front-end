@@ -31,7 +31,7 @@ const SongSection: React.FC<Props> = ({
         {sampleSongs.map((song) => (
           <div
             key={song.id}
-            className={`min-w-[150px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px] p-4 rounded-lg ${cardBg} text-white flex-shrink-0 hover:scale-105 transition-transform`}
+            className={`min-w-[150px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px] p-4 rounded-lg ${cardBg} text-white shrink-0 hover:scale-105 transition-transform`}
           >
             <div className="h-28 md:h-32 bg-gray-500 rounded-lg mb-2"></div>
             <h3 className="font-semibold text-sm md:text-base">{song.title}</h3>
