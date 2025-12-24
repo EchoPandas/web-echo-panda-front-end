@@ -20,7 +20,8 @@ import Artist from "../pages/Artist";
 import AboutUs from "../pages/AboutUs";
 import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
-import { Favorites, Playlist, Settings } from "./placeholderComponents";
+import FavoritesPage from "../pages/Favorites";
+import { Playlist, Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
@@ -93,7 +94,7 @@ export const routeConfig: RouteConfig[] = [
     path: "/favorites",
     label: "Your Favorites",
     icon: FaRegHeart,
-    component: Favorites,
+    component: FavoritesPage,
     group: "playlist",
     showInSidebar: true,
   },
