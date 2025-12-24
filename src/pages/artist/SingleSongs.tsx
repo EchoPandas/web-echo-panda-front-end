@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function SingleSongs() {
   const [showAll, setShowAll] = useState(false);
+  const navigate = useNavigate();
   
   const allSingles = [
     { title: "Single Song 1" },
@@ -32,7 +34,7 @@ export default function SingleSongs() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {displayedSingles.map((song, i) => (
-          <div key={i} className="cursor-pointer group">
+          <div key={i} className="cursor-pointer group" onClick={() => navigate(`/song/single-${i + 1}`)}>
             <div className="w-full aspect-square  bg-gray-700 text-white rounded-lg group-hover:opacity-80 transition-all flex items-center justify-center group-hover:scale-105 duration-300">
               <span className="text-white font-semibold text-center px-2">Single Cover</span>
             </div>

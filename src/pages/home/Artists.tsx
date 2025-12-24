@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   title: string;
@@ -11,6 +12,7 @@ const sampleArtists = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
+  const navigate = useNavigate();
   const bgClass = isLightMode ? "bg-gray-50" : "bg-gray-900";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
 
@@ -25,7 +27,8 @@ const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
         {sampleArtists.map((artist) => (
           <div
             key={artist.id}
-            className="flex flex-col items-center flex-shrink-0 w-28 snap-start"
+            onClick={() => navigate(`/song/${artist.id + 1}`)}
+            className="flex flex-col items-center flex-shrink-0 w-28 snap-start cursor-pointer"
           >
             <div className="
               rounded-full bg-gray-500 mb-2 transition hover:scale-105

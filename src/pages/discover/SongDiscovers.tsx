@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaHeart as Heart,
   FaPlay as Play,
@@ -41,6 +42,7 @@ const SongDiscoverSection: React.FC<Props> = ({
   title = "Top Tracks",
   isLightMode = false,
 }) => {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState<number | null>(null);
   const [favs, setFavs] = useState<Record<number, boolean>>({});
   const [contextMenu, setContextMenu] = useState<{
@@ -122,6 +124,7 @@ const SongDiscoverSection: React.FC<Props> = ({
             key={s.id}
             onMouseEnter={() => setHovered(s.id)}
             onMouseLeave={() => setHovered(null)}
+            onClick={() => navigate(`/song/${s.id}`)}
             className="group grid grid-cols-12 items-center gap-4 p-3 rounded-lg bg-gray-800/70 hover:bg-gray-700/70 transition-colors cursor-pointer"
           >
             <div className="col-span-1 flex justify-center items-center text-sm font-semibold text-gray-200">

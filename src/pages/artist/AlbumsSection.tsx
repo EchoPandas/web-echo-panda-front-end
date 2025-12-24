@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AlbumsSection() {
+  const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   
   const allAlbums = [
@@ -32,7 +34,7 @@ export default function AlbumsSection() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {displayedAlbums.map((album, i) => (
-          <div key={i} className="cursor-pointer group">
+          <div key={i} onClick={() => navigate(`/song/${i + 1}`)} className="cursor-pointer group">
             <div className="w-full aspect-square  bg-gray-700 text-white rounded-lg group-hover:opacity-80 transition-all flex items-center justify-center group-hover:scale-105 duration-300">
               <span className="text-white font-semibold text-center px-2">Album Cover</span>
             </div>

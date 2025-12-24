@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function PopularSongs() {
+  const navigate = useNavigate();
   const [favorites, setFavorites] = useState<{ [key: number]: boolean }>({});
   const [showAll, setShowAll] = useState(false);
   
@@ -47,7 +49,8 @@ export default function PopularSongs() {
             {displayedSongs.map((song, i) => (
               <tr
                 key={i}
-                className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-all group"
+                onClick={() => navigate(`/song/${i + 1}`)}
+                className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-all group cursor-pointer"
               >
                 <td className="py-3 px-2 text-zinc-500 group-hover:text-zinc-300">
                   {i + 1}

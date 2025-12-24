@@ -30,7 +30,8 @@ const ArtistSection: React.FC<Props> = ({ title, isLightMode }) => {
             {sampleArtists.map((artist) => (
               <div
                 key={artist.id}
-                className="flex flex-col items-center flex-shrink-0 w-32 p-3 rounded-lg bg-gray-800/60 hover:bg-gray-700/60 transition"
+                onClick={() => navigate(`/song/${artist.id + 1}`)}
+                className="flex flex-col items-center flex-shrink-0 w-32 p-3 rounded-lg bg-gray-800/60 hover:bg-gray-700/60 transition cursor-pointer"
               >
                 <div className="h-32 w-32 rounded-full bg-gray-500 mb-2 hover:scale-105 transition"></div>
                 <p className="text-center text-sm text-gray-200 truncate w-28">{artist.name}</p>

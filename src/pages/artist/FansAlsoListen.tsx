@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function FansAlsoListen() {
+  const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   
   const allArtists = [
@@ -36,7 +38,7 @@ export default function FansAlsoListen() {
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {displayedArtists.map((artist, i) => (
-          <div key={i} className="group cursor-pointer">
+          <div key={i} onClick={() => navigate(`/song/${i + 1}`)} className="group cursor-pointer">
           
             <div className="relative mb-3">
               <div className="w-full aspect-square bg-linear-to-br from-purple-600 via-blue-600 to-cyan-500 rounded-full group-hover:scale-105 transition-transform duration-300 shadow-lg overflow-hidden flex items-center justify-center">
