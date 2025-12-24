@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { AlbumItem } from "./albumData";
 
 interface Props {
@@ -6,8 +7,10 @@ interface Props {
   isLightMode: boolean;
 }
 export default function AlbumCard({ album, isLightMode }: Props) {
+  const navigate = useNavigate();
+
   return (
-    <div className="cursor-pointer group relative h-full flex flex-col">
+    <div onClick={() => navigate(`/song/${album.id}`)} className="cursor-pointer group relative h-full flex flex-col">
    
       <div
         className={`rounded-xl p-4 border border-zinc-800 hover:scale-105 transition relative overflow-hidden flex-1 flex flex-col ${

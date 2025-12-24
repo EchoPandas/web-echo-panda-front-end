@@ -24,6 +24,7 @@ import FavoritesPage from "../pages/Favorites";
 import { Playlist, Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
+import SongDetails from "../components/SongDetail";
 
 export interface RouteConfig {
   path: string;
@@ -170,6 +171,14 @@ export const routeConfig: RouteConfig[] = [
     label: "Songs",
     component: SongSection,
     group: "general",
+    showInSidebar: false,
+    icon: null,
+  },
+  {
+    path: "/song/:id",
+    label: "Song Detail",
+    component: SongDetails,
+    group: "other",
     showInSidebar: false,
     icon: null,
   },

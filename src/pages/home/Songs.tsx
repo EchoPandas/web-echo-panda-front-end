@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   title?: string;
@@ -14,6 +15,7 @@ const SongSection: React.FC<Props> = ({
   title = "Songs",
   isLightMode = true
 }) => {
+  const navigate = useNavigate();
   const bgClass = isLightMode ? "bg-gray-50" : "bg-gray-900";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
   const cardBg = isLightMode ? "bg-gray-200" : "bg-gray-700";
@@ -31,7 +33,8 @@ const SongSection: React.FC<Props> = ({
         {sampleSongs.map((song) => (
           <div
             key={song.id}
-            className={`min-w-[150px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px] p-4 rounded-lg ${cardBg} text-white shrink-0 hover:scale-105 transition-transform`}
+            onClick={() => navigate(`/song/${song.id}`)}
+            className={`min-w-[150px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px] p-4 rounded-lg ${cardBg} text-white shrink-0 hover:scale-105 transition-transform cursor-pointer`}
           >
             <div className="h-28 md:h-32 bg-gray-500 rounded-lg mb-2"></div>
             <h3 className="font-semibold text-sm md:text-base">{song.title}</h3>

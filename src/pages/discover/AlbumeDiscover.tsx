@@ -34,7 +34,8 @@ const AlbumSection: React.FC<Props> = ({ title, isLightMode }) => {
             {sampleAlbums.map((album) => (
               <div
                 key={album.id}
-                className="min-w-[200px] p-4 rounded-lg bg-gray-700 text-white flex-shrink-0 hover:scale-105 transition"
+                onClick={() => navigate(`/song/${album.id + 1}`)}
+                className="min-w-[200px] p-4 rounded-lg bg-gray-700 text-white flex-shrink-0 hover:scale-105 transition cursor-pointer"
               >
                 <div className="h-32 bg-gray-500 rounded-lg mb-2"></div>
                 <h3 className="font-semibold">{album.title}</h3>
