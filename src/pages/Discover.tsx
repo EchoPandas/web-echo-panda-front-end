@@ -1,10 +1,9 @@
+import React from "react";
+import SongSection from "./home/Songs";
+import SongDiscoverSection from "./discover/SongDiscovers";
 
-import React from 'react';
-import SongSection from './home/Songs';
-import SongDiscoverSection from './discover/SongDiscovers';
-import AlbumSection from './discover/AlbumeDiscover';
-import ArtistSection from './home/Artists';
-import AppFooter from './home/AppFooter';
+import ArtistSection from "./home/Artists";
+import AppFooter from "./home/AppFooter";
 
 const Discover: React.FC = () => {
   // For this component, we'll assume lightMode false for now
@@ -16,10 +15,10 @@ const Discover: React.FC = () => {
       {/* Songs Sections */}
       <SongSection title="Music Genres" isLightMode={isLightMode} />
       <SongSection title="Featured Charts" isLightMode={isLightMode} />
-      <ArtistSection title="Popular Artists" isLightMode={isLightMode} />     
+      <ArtistSection title="Popular Artists" isLightMode={isLightMode} />
       <SongDiscoverSection title="Trending Songs" isLightMode={isLightMode} />
       <SongSection title="New Release Songs" isLightMode={isLightMode} />
-      <AlbumSection title="Top Albums" isLightMode={isLightMode} />
+      <SongSection title="Top Albums" isLightMode={isLightMode} />
 
       {/* Footer */}
       <AppFooter isLightMode={isLightMode} />
