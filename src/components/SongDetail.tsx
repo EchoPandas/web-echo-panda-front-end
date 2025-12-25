@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaPlay, FaHeart, FaEllipsisH, FaStepBackward, FaStepForward, 
   FaRedo, FaRandom, FaVolumeUp, FaListUl, FaDesktop, 
-  FaMicrophone, FaChevronDown, FaChevronLeft, FaPlus
+  FaMicrophone, FaChevronDown, FaChevronLeft, FaPlus,
+  FaCheck
 } from 'react-icons/fa';
 
 interface SongData {
@@ -41,8 +42,88 @@ const mockSongsData: Record<string, SongData> = {
 const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showNotification, setShowNotification] = useState(false);
 
   const song: SongData = mockSongsData[id || '1'] || mockSongsData['1'];
+
+  // Auto-hide notification
+  useEffect(() => {
+    if (showNotification) {
+      const timer = setTimeout(() => {
+        setShowNotification(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showNotification]);
+
+  const addToPlaylist = (songData: SongData) => {
+    // Get existing playlist from localStorage
+    let playlist: SongData[] = [];
+    const existingPlaylist = localStorage.getItem('playlistSongs');
+    
+    if (existingPlaylist) {
+      try {
+        playlist = JSON.parse(existingPlaylist);
+      } catch (error) {
+        console.error('Error parsing playlist:', error);
+        playlist = [];
+      }
+    }
+
+    // Create a unique ID for the song to allow duplicates
+    const uniqueId = `${songData.id}-${Date.now()}`;
+    
+    // Create song data for playlist
+    const playlistSong: SongData = {
+      ...songData,
+      id: uniqueId
+    };
+    
+    // Add new song to playlist
+    playlist.push(playlistSong);
+    
+    try {
+      localStorage.setItem('playlistSongs', JSON.stringify(playlist));
+      setShowNotification(true);
+      console.log('Added to playlist:', songData.title);
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  };
+
+  const addCurrentSongToPlaylist = () => {
+    addToPlaylist(song);
+  };
+
+  const addGenericSongToPlaylist = (songNumber: number) => {
+    const genericSong: SongData = {
+      id: `generic-${songNumber}`,
+      title: `Song Title ${songNumber}`,
+      artist: `Artist ${songNumber}`,
+      album: `Album ${songNumber}`,
+      duration: '3:30',
+      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f',
+      lyrics: [`Lyrics line 1 for song ${songNumber}`, `Lyrics line 2 for song ${songNumber}`],
+      credits: [{ name: `Artist ${songNumber}`, role: 'Main Artist' }]
+    };
+    
+    addToPlaylist(genericSong);
+  };
+
+  const addNextSongToPlaylist = () => {
+    const nextSong: SongData = {
+      id: 'next-song',
+      title: 'Song Title - Albums - Singer',
+      artist: 'Artist Name',
+      album: 'Album Name',
+      duration: '4:15',
+      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f',
+      lyrics: ['Sample lyrics for next song', 'More sample lyrics'],
+      credits: [{ name: 'Artist Name', role: 'Main Artist' }]
+    };
+    
+    addToPlaylist(nextSong);
+  };
 
   return (
     <div className="flex h-screen bg-black text-gray-400 font-sans overflow-hidden">
@@ -51,7 +132,20 @@ const SongDetails: React.FC = () => {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+        @keyframes slideIn {
+          from { transform: translateY(-20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
       `}</style>
+      
+      {/* Notification */}
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 px-6 py-3 bg-green-600 text-white rounded-lg shadow-lg animate-slideIn flex items-center gap-2">
+          <FaCheck size={16} />
+          <span className="font-medium">Added to playlist!</span>
+        </div>
+      )}
       
       <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar relative">
         
@@ -93,9 +187,14 @@ const SongDetails: React.FC = () => {
                {[1, 2, 3, 4, 5, 6].map((idx) => (
                   <div key={idx} className="group flex items-center gap-4 p-2 px-4 hover:bg-white/5 rounded-md transition text-sm cursor-pointer">
                      <span className="w-4 text-gray-500">{idx}</span>
-                     <div className="w-10 h-10 bg-gradient-to-tr from-purple-500 to-blue-500 rounded shadow-md"></div>
-                     <FaHeart size={14} className="opacity-0 group-hover:opacity-100 hover:text-white" />
-                     <span className="flex-1 text-white font-medium">Song Title - Albums - Singer </span>
+                     <div className="w-10 h-10 bg-linear-to-tr from-purple-500 to-blue-500 rounded shadow-md"></div>
+                     <button 
+                       onClick={() => addGenericSongToPlaylist(idx)}
+                       className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+                     >
+                       <FaPlus size={14} />
+                     </button>
+                     <span className="flex-1 text-white font-medium">Song Title - Albums - Singer</span>
                      <span className="text-xs text-gray-500 tabular-nums">11-23-2020</span>
                   </div>
                ))}
@@ -108,7 +207,7 @@ const SongDetails: React.FC = () => {
       <aside className="w-[400px] bg-[#030312] border-l border-white/5 p-8 flex flex-col gap-6 overflow-y-auto no-scrollbar">
         <div className="relative aspect-square w-full bg-[#0d1b3e] rounded-3xl p-6 flex flex-col items-center justify-center shadow-2xl border border-white/5">
            <div className="w-full h-full rounded-full bg-black/40 p-6 relative">
-              <div className="w-full h-full rounded-full bg-gradient-to-r from-orange-400 via-red-500 to-blue-600 animate-spin-slow flex items-center justify-center">
+              <div className="w-full h-full rounded-full bg-linear-to-r from-orange-400 via-red-500 to-blue-600 animate-spin-slow flex items-center justify-center">
                  <div className="w-1/3 h-1/3 bg-black rounded-full border-4 border-white/10"></div>
               </div>
            </div>
@@ -122,9 +221,12 @@ const SongDetails: React.FC = () => {
              </div>
              <div className="flex gap-3 text-blue-500">
                <FaHeart size={20} fill="currentColor" className="cursor-pointer hover:text-white hover:scale-110 transition-all duration-200" />
-               <div className="bg-blue-600/20 p-1.5 rounded hover:bg-blue-600/30 cursor-pointer hover:scale-110 transition-all duration-200">
+               <button 
+                 onClick={addCurrentSongToPlaylist}
+                 className="bg-blue-600/20 p-1.5 rounded hover:bg-blue-600/30 cursor-pointer hover:scale-110 transition-all duration-200"
+               >
                   <FaPlus size={14} />
-               </div>
+               </button>
              </div>
            </div>
         </div>
@@ -164,7 +266,10 @@ const SongDetails: React.FC = () => {
                 <p className="text-white text-xs font-semibold truncate">Song Title - Albums - Singer</p>
                 <p className="text-[10px] text-gray-500">Artist Name</p>
              </div>
-             <button className="bg-blue-500/20 hover:bg-blue-500/30 p-2 rounded-full text-blue-500 hover:text-white transition">
+             <button 
+               onClick={addNextSongToPlaylist}
+               className="bg-blue-500/20 hover:bg-blue-500/30 p-2 rounded-full text-blue-500 hover:text-white transition"
+             >
                <FaPlus size={12} />
              </button>
           </div>
@@ -187,9 +292,12 @@ const SongDetails: React.FC = () => {
           <div className="flex items-center gap-8 text-gray-400">
             <FaRandom size={16} className="text-[#1d51b9]" />
             <FaStepBackward size={20} className="hover:text-white cursor-pointer" />
-            <div className="bg-white rounded-full p-2.5 text-black hover:scale-105 transition cursor-pointer">
+            <button 
+              onClick={addCurrentSongToPlaylist}
+              className="bg-white rounded-full p-2.5 text-black hover:scale-105 transition cursor-pointer"
+            >
                <FaPlay size={20} />
-            </div>
+            </button>
             <FaStepForward size={20} className="hover:text-white cursor-pointer" />
             <FaRedo size={16} />
           </div>
