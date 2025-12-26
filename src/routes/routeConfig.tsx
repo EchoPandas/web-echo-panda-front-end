@@ -21,10 +21,11 @@ import AboutUs from "../pages/AboutUs";
 import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
 import FavoritesPage from "../pages/Favorites";
-import { Playlist, Settings } from "./placeholderComponents";
+import { Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
+import Playlist from "../pages/Playlist";
 
 export interface RouteConfig {
   path: string;
@@ -99,7 +100,7 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
   {
-    path: "/playlist",
+    path: "/Playlist",
     label: "Your Playlist",
     icon: RiPlayListFill,
     component: Playlist,
