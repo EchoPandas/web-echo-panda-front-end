@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaPlay, FaHeart, FaEllipsisH, FaStepBackward, FaStepForward, 
   FaRedo, FaRandom, FaVolumeUp, FaListUl, FaDesktop, 
-  FaMicrophone, FaChevronDown, FaChevronLeft, FaPlus
+  FaMicrophone, FaChevronDown, FaChevronLeft, FaPlus,
+  FaUser, FaCompactDisc, FaTimes
 } from 'react-icons/fa';
+import Player from './Player';
 
+// --- Types & Mock Data ---
 interface SongData {
   id: string;
   title: string;
@@ -38,180 +41,229 @@ const mockSongsData: Record<string, SongData> = {
   }
 };
 
+interface SongItem {
+  id: number;
+  title: string;
+  artist: string;
+  date?: string;
+  album?: string;
+  duration?: string;
+  color?: string;
+}
+
+const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  title: `Song ${i + 1}`,
+  artist: `Artist ${i + 1}`,
+  date: "2024-01-01",
+  album: `Album ${i + 1}`,
+  duration: `${2 + (i % 4)}:${(10 + i).toString().slice(-2)}`,
+  color: "bg-gray-400",
+}));
+
 const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // --- States ---
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [favs, setFavs] = useState<Record<number, boolean>>({});
+  const [showSidebar, setShowSidebar] = useState<boolean>(false); // Control Sidebar visibility
+  const [contextMenu, setContextMenu] = useState<{
+    songId: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const song: SongData = mockSongsData[id || '1'] || mockSongsData['1'];
 
+  // --- Handlers ---
+  const toggleFav = (id: number) => {
+    setFavs((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleSongClick = (songId: number) => {
+    // When a song in the list is clicked, show the sidebar
+    setShowSidebar(true);
+    console.log(`Playing/Viewing song: ${songId}`);
+  };
+
+  const handleHeartClick = (e: React.MouseEvent, songId: number) => {
+    e.stopPropagation();
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setContextMenu({
+      songId,
+      x: rect.left,
+      y: rect.bottom + 5,
+    });
+  };
+
+  const closeContextMenu = () => setContextMenu(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        closeContextMenu();
+      }
+    };
+    if (contextMenu) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [contextMenu]);
+
   return (
-    <div className="flex h-screen bg-black text-gray-400 font-sans overflow-hidden">
+    <div className="flex flex-col h-screen bg-black text-gray-400 font-sans overflow-hidden">
       <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       
-      <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar relative">
+      <div className="flex flex-1 overflow-hidden">
         
-        <header className="absolute top-0 w-full z-20 p-6 px-10">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="bg-black/40 hover:bg-black/60 p-2.5 rounded-full text-white transition flex items-center justify-center w-10 h-10"
-          >
-            <FaChevronLeft size={16} />
-          </button>
-        </header>
+        {/* LEFT COLUMN: Main Content Area */}
+        <main className="flex-1 flex flex-col overflow-y-auto hide-scrollbar relative">
+          
+          <header className="absolute top-0 w-full z-20 p-6 px-10">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="bg-black/40 hover:bg-black/60 p-2.5 rounded-full text-white transition flex items-center justify-center w-10 h-10"
+            >
+              <FaChevronLeft size={16} />
+            </button>
+          </header>
 
-        {/* Hero Banner */}
-        <div className="relative min-h-[450px] flex flex-col justify-end p-12 bg-cover bg-center" 
-             style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.9)), url('${song.coverUrl}')` }}>
-          <div className="flex items-center gap-2 text-[10px] mb-2 font-bold text-white uppercase tracking-widest">
-            <div className="bg-blue-500 rounded-full p-0.5"><FaChevronDown size={8}/></div>
-            <span>Song</span>
+          {/* Hero Banner */}
+          <div className="relative shrink-0 min-h-[450px] flex flex-col justify-end p-12 bg-cover bg-center" 
+               style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.9)), url('${song.coverUrl}')` }}>
+            <div className="flex items-center gap-2 text-[10px] mb-2 font-bold text-white uppercase tracking-widest">
+              <div className="bg-blue-500 rounded-full p-0.5"><FaChevronDown size={8}/></div>
+              <span>Song</span>
+            </div>
+            <h1 className="text-8xl font-black text-white mb-8 tracking-tight">Eunoia Monica</h1>
+            <div className="flex items-center gap-4">
+              <button className="bg-[#1d88b9] hover:scale-105 transition text-black px-10 py-2.5 rounded-full font-bold uppercase text-xs tracking-widest">Play</button>
+              <FaEllipsisH className="cursor-pointer hover:text-white ml-2 text-xl text-white" />
+            </div>
           </div>
-          <h1 className="text-8xl font-black text-white mb-8 tracking-tight">Eunoia Monica</h1>
-          <div className="flex items-center gap-4">
-            <button className="bg-[#1d88b9] hover:scale-105 transition text-black px-10 py-2.5 rounded-full font-bold uppercase text-xs tracking-widest">Play</button>
-            <FaEllipsisH className="cursor-pointer hover:text-white ml-2 text-xl" />
+
+          {/* Sticky Tab Bar */}
+          <div className="flex gap-10 px-12 py-6 text-xs font-bold tracking-widest sticky top-0 bg-black/90 backdrop-blur-md z-10 border-b border-white/5">
+            <span className="text-[#1d88b9] border-b-2 border-[#1d88b9] pb-4 cursor-pointer">OVERVIEW</span>
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-10 px-12 py-6 text-xs font-bold tracking-widest sticky top-0 bg-black/90 backdrop-blur-md z-10 border-b border-white/5">
-          <span className="text-[#1d88b9] border-b-2 border-[#1d88b9] pb-4 cursor-pointer">OVERVIEW</span>
-          <span className="hover:text-white cursor-pointer transition">FANS ALSO LIKE</span>
-          <span className="hover:text-white cursor-pointer transition">ABOUT</span>
-        </div>
+          {/* SONG LIST SECTION */}
+          <div className="p-12 pt-8 pb-32">
+            <div className="grid grid-cols-12 gap-4 text-xs uppercase tracking-widest text-gray-500 font-bold border-b border-white/5 pb-4">
+              <div className="col-span-1 text-center">#</div>
+              <div className="col-span-5 md:col-span-4">Title</div>
+              <div className="hidden md:block md:col-span-3">Album</div>
+              <div className="hidden md:block md:col-span-2">Release</div>
+              <div className="col-span-2 text-right pr-4">Time</div>
+            </div>
 
-        {/* Content Section */}
-        <div className="grid grid-cols-12 gap-12 p-12 pt-8 mb-24">
-          <div className="col-span-8">
-             <h3 className="text-white font-bold mb-6">Popular</h3>
-             <div className="space-y-1">
-               {[1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div key={idx} className="group flex items-center gap-4 p-2 px-4 hover:bg-white/5 rounded-md transition text-sm cursor-pointer">
-                     <span className="w-4 text-gray-500">{idx}</span>
-                     <div className="w-10 h-10 bg-gradient-to-tr from-purple-500 to-blue-500 rounded shadow-md"></div>
-                     <FaHeart size={14} className="opacity-0 group-hover:opacity-100 hover:text-white" />
-                     <span className="flex-1 text-white font-medium">Song Title - Albums - Singer </span>
-                     <span className="text-xs text-gray-500 tabular-nums">11-23-2020</span>
+            <div className="space-y-1 mt-4">
+              {sampleSongs.map((s) => (
+                <div
+                  key={s.id}
+                  onMouseEnter={() => setHovered(s.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => handleSongClick(s.id)}
+                  className="group grid grid-cols-12 items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+                >
+                  <div className="col-span-1 flex justify-center items-center text-sm font-bold">
+                    {hovered === s.id ? <FaPlay size={12} className="text-white" /> : <span className="text-gray-600">{s.id}</span>}
                   </div>
-               ))}
-             </div>
-          </div>
-        </div>
-      </main>
 
-      {/* --- RIGHT SIDEBAR --- */}
-      <aside className="w-[400px] bg-[#030312] border-l border-white/5 p-8 flex flex-col gap-6 overflow-y-auto no-scrollbar">
-        <div className="relative aspect-square w-full bg-[#0d1b3e] rounded-3xl p-6 flex flex-col items-center justify-center shadow-2xl border border-white/5">
-           <div className="w-full h-full rounded-full bg-black/40 p-6 relative">
-              <div className="w-full h-full rounded-full bg-gradient-to-r from-orange-400 via-red-500 to-blue-600 animate-spin-slow flex items-center justify-center">
-                 <div className="w-1/3 h-1/3 bg-black rounded-full border-4 border-white/10"></div>
-              </div>
-           </div>
-        </div>
+                  <div className="col-span-5 md:col-span-4 flex items-center gap-4">
+                    <div className={`w-12 h-12 ${s.color} rounded-lg shrink-0`} />
+                    <div className="min-w-0">
+                      <div className={`truncate font-bold text-[15px] ${hovered === s.id ? "text-white" : "text-gray-200"}`}>{s.title}</div>
+                      <div className="text-xs text-gray-500 font-medium">{s.artist}</div>
+                    </div>
+                  </div>
 
-        <div className="mt-2">
-           <div className="flex justify-between items-start">
-             <div>
-               <h2 className="text-white text-2xl font-bold tracking-tight">{song.title}</h2>
-               <p className="text-gray-400 text-sm mt-1">{song.artist}</p>
-             </div>
-             <div className="flex gap-3 text-blue-500">
-               <FaHeart size={20} fill="currentColor" className="cursor-pointer hover:text-white hover:scale-110 transition-all duration-200" />
-               <div className="bg-blue-600/20 p-1.5 rounded hover:bg-blue-600/30 cursor-pointer hover:scale-110 transition-all duration-200">
-                  <FaPlus size={14} />
-               </div>
-             </div>
-           </div>
-        </div>
+                  <div className="hidden md:block md:col-span-3 text-sm font-medium text-gray-400 truncate">{s.album}</div>
+                  <div className="hidden md:block md:col-span-2 text-sm font-medium text-gray-500">{s.date}</div>
 
-        <div className="bg-blue-600/10 border border-blue-500/20 p-5 rounded-2xl">
-           <div className="text-[13px] text-blue-200/80 space-y-3 font-medium leading-relaxed italic">
-              {song.lyrics.map((line, index) => (
-                <p key={index} className={index === 1 ? "text-blue-100 font-semibold" : ""}>{line}</p>
+                  <div className="col-span-2 flex items-center justify-end gap-8 pr-4">
+                    <FaHeart 
+                      size={16} 
+                      onClick={(e) => handleHeartClick(e, s.id)}
+                      className={`cursor-pointer transition-colors ${favs[s.id] ? "text-red-500" : "text-gray-600 group-hover:text-gray-400"}`} 
+                    />
+                    <div className="text-sm font-bold text-gray-400 w-10 text-right">{s.duration}</div>
+                  </div>
+                </div>
               ))}
-           </div>
-        </div>
-
-        {/* Credits Section */}
-        <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-white font-bold text-sm">Credits</span>
-            <button className="text-[10px] border border-white/20 px-3 py-1 rounded-full text-white font-bold tracking-tighter hover:bg-white/10">FOLLOW</button>
+            </div>
           </div>
-          <div className="space-y-4">
-            {song.credits.map((credit, i) => (
-              <div key={i}>
-                <p className="text-white text-sm font-semibold">{credit.name}</p>
-                <p className="text-[10px] text-gray-500 font-bold uppercase">{credit.role}</p>
+        </main>
+
+        {/* RIGHT SIDEBAR: Now conditionally rendered with showSidebar state */}
+        {showSidebar && (
+          <aside className="flex w-[380px] bg-gradient-to-b from-[#0a0a1a] to-[#1a0a2e] border-l border-white/10 p-5 flex-col gap-5 overflow-y-auto hide-scrollbar pb-32 animate-in slide-in-from-right duration-300">
+            
+            {/* Close Button for Sidebar */}
+            <div className="flex justify-end">
+                <button onClick={() => setShowSidebar(false)} className="text-gray-400 hover:text-white transition">
+                    <FaTimes size={20} />
+                </button>
+            </div>
+
+            {/* 1. Vinyl Disk Section */}
+            <div className="relative bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-[30px] p-8 border border-blue-500/30 flex flex-col items-center justify-center min-h-[280px] shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+              <div className="relative w-40 h-40 rounded-full bg-[#111] border-[6px] border-[#333] flex items-center justify-center shadow-2xl animate-[spin_6s_linear_infinite]">
+                <div className="w-full h-full rounded-full border border-white/10 flex items-center justify-center bg-[conic-gradient(from_0deg,#111,#222,#111)]">
+                  <div className="w-16 h-16 rounded-full bg-red-600 border-4 border-black flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full bg-black"></div>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Next Songs Section */}
-        <div className="bg-white/5 p-5 rounded-2xl border border-white/5 mb-24">
-          <h3 className="text-white font-bold text-sm mb-4">Next Songs</h3>
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-500 rounded overflow-hidden">
-                <img src={song.coverUrl} className="w-full h-full object-cover" />
-             </div>
-             <div className="flex-1 overflow-hidden">
-                <p className="text-white text-xs font-semibold truncate">Song Title - Albums - Singer</p>
-                <p className="text-[10px] text-gray-500">Artist Name</p>
-             </div>
-             <button className="bg-blue-500/20 hover:bg-blue-500/30 p-2 rounded-full text-blue-500 hover:text-white transition">
-               <FaPlus size={12} />
-             </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* --- PLAYER FOOTER --- */}
-      <footer className="fixed bottom-0 w-full bg-black/95 backdrop-blur-xl border-t border-white/10 h-24 flex items-center justify-between px-8 z-20">
-        <div className="flex items-center gap-4 w-[30%]">
-          <div className="w-14 h-14 rounded overflow-hidden shadow-lg border border-white/10">
-            <img src={song.coverUrl} alt={song.title} className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h4 className="text-white text-sm font-bold">{song.title}</h4>
-            <p className="text-[11px] text-gray-500 mt-0.5">Artist Name / Collaboration</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-center w-[40%] gap-2">
-          <div className="flex items-center gap-8 text-gray-400">
-            <FaRandom size={16} className="text-[#1d51b9]" />
-            <FaStepBackward size={20} className="hover:text-white cursor-pointer" />
-            <div className="bg-white rounded-full p-2.5 text-black hover:scale-105 transition cursor-pointer">
-               <FaPlay size={20} />
+              <div className="absolute top-20 right-10 w-24 h-1 bg-gray-400 rotate-[35deg] origin-right rounded-full">
+                 <div className="absolute left-0 -top-1 w-3 h-3 bg-gray-300 rounded-sm"></div>
+              </div>
             </div>
-            <FaStepForward size={20} className="hover:text-white cursor-pointer" />
-            <FaRedo size={16} />
-          </div>
-          <div className="flex items-center gap-3 w-full max-w-md text-[10px] text-gray-500 font-medium">
-            <span>5:16</span>
-            <div className="flex-1 h-1 bg-white/20 rounded-full">
-              <div className="h-full bg-white w-[75%] rounded-full"></div>
-            </div>
-            <span>5:41</span>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-end gap-5 w-[30%] text-gray-400">
-          <FaMicrophone size={16} className="hover:text-white" />
-          <FaListUl size={18} className="hover:text-white" />
-          <FaDesktop size={18} className="hover:text-white" />
-          <FaVolumeUp size={18} />
-          <div className="w-24 h-1 bg-white/20 rounded-full">
-             <div className="h-full bg-white w-1/2 rounded-full"></div>
-          </div>
-        </div>
-      </footer>
+            {/* 2. Title & Action Icons */}
+            <div className="flex justify-between items-center px-2 mt-2">
+              <div className="min-w-0">
+                <h2 className="text-white text-xl font-extrabold tracking-wide truncate">{song.title}</h2>
+                <p className="text-gray-400 text-sm font-medium">{song.artist}</p>
+              </div>
+              <div className="flex gap-5 items-center shrink-0">
+                 <button onClick={() => toggleFav(parseInt(id || '1'))}>
+                   <FaHeart size={26} className={favs[parseInt(id || '1')] ? "text-blue-500" : "text-blue-500/40"} />
+                 </button>
+              </div>
+            </div>
+
+            {/* 3. Lyrics Box */}
+            <div className="bg-blue-900/10 border border-blue-400/40 rounded-[25px] p-6 backdrop-blur-sm">
+              <div className="space-y-4 text-sm font-medium leading-relaxed text-blue-100/80">
+                {song.lyrics.map((line, i) => (
+                  <p key={i} className={i === 1 ? "text-white font-bold" : ""}>{line}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Credits Box */}
+            <div className="bg-[#0f0f25] border border-blue-900/50 rounded-[25px] p-6">
+              <h4 className="text-white font-bold text-lg mb-4">Credits</h4>
+              <div className="space-y-4">
+                {song.credits.map((credit, i) => (
+                  <div key={i}>
+                    <p className="text-white text-sm font-bold">{credit.name}</p>
+                    <p className="text-gray-500 text-xs">{credit.role}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        )}
+      </div>
+
+      {/* PLAYER */}
+      <Player song={{ title: song.title, artist: song.artist, coverUrl: song.coverUrl }} />
     </div>
   );
 };
