@@ -21,22 +21,24 @@ import AboutUs from "../pages/AboutUs";
 import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
 import FavoritesPage from "../pages/Favorites";
+import { Playlist, Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
-import Playlist from "../pages/Playlist";
-import Settings from "../pages/Settings";
+import SearchPage from "../pages/SearchPage";
 
 export interface RouteConfig {
   path: string;
   label: string;
   icon: React.ElementType | null;
-  component?: React.ComponentType;
+   component?: React.ComponentType<any>;
   group: "menu" | "library" | "playlist" | "general" | "auth" | "other";
   requiresAuth?: boolean;
   showInSidebar?: boolean;
 }
-
+const injectProps = (Component: React.ComponentType<any>, props: any) => {
+  return () => <Component {...props} />;
+};
 export const routeConfig: RouteConfig[] = [
   // Main menu routes
   {
@@ -100,7 +102,7 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
   {
-    path: "/Playlist",
+    path: "/playlist",
     label: "Your Playlist",
     icon: RiPlayListFill,
     component: Playlist,
@@ -110,12 +112,12 @@ export const routeConfig: RouteConfig[] = [
 
   // General routes
   {
-  path: "/settings",
-  label: "Settings",
-  icon: FaCog,
-  component: Settings,
-  group: "general",
-  showInSidebar: true,
+    path: "/settings",
+    label: "Settings",
+    icon: FaCog,
+    component: Settings,
+    group: "general",
+    showInSidebar: true,
   },
   {
     path: "/modify",
@@ -183,8 +185,15 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
     icon: null,
   },
-];
-
+{
+  path: "/search",
+  label: "Search",
+  component: injectProps(SearchPage, { isLightMode: true }),
+  group: "other",
+  showInSidebar: false,
+  icon: null,
+}
+]
 // Helper function to get sidebar links
 export const getSidebarLinks = (): RouteConfig[] => {
   return routeConfig.filter((route) => route.showInSidebar === true);
