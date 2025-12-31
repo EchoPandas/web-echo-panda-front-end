@@ -25,17 +25,20 @@ import { Playlist, Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
+import SearchPage from "../pages/SearchPage";
 
 export interface RouteConfig {
   path: string;
   label: string;
   icon: React.ElementType | null;
-  component?: React.ComponentType;
+   component?: React.ComponentType<any>;
   group: "menu" | "library" | "playlist" | "general" | "auth" | "other";
   requiresAuth?: boolean;
   showInSidebar?: boolean;
 }
-
+const injectProps = (Component: React.ComponentType<any>, props: any) => {
+  return () => <Component {...props} />;
+};
 export const routeConfig: RouteConfig[] = [
   // Main menu routes
   {
@@ -182,8 +185,15 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
     icon: null,
   },
-];
-
+{
+  path: "/search",
+  label: "Search",
+  component: injectProps(SearchPage, { isLightMode: true }),
+  group: "other",
+  showInSidebar: false,
+  icon: null,
+}
+]
 // Helper function to get sidebar links
 export const getSidebarLinks = (): RouteConfig[] => {
   return routeConfig.filter((route) => route.showInSidebar === true);

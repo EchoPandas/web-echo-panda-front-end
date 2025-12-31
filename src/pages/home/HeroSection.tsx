@@ -1,10 +1,22 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   isLightMode: boolean;
 }
 
 const HeroSection: React.FC<Props> = () => {
+  const navigate = useNavigate();
+
+
+ const handleDiscover = () => {
+    navigate("/discover");
+  };
+
+  const handleCreatePlaylist = () => {
+    navigate("/playlist"); 
+  };
+
   return (
     <section className="relative mt-4 mb-8 overflow-hidden min-h-[300px] md:min-h-[450px] lg:min-h-[550px]">
       
@@ -38,11 +50,18 @@ const HeroSection: React.FC<Props> = () => {
             </p>
 
             {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+              <button
+                onClick={handleDiscover}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              >
                 Discover Now
               </button>
-              <button className="px-6 py-3 border border-blue-400 text-blue-300 rounded-lg hover:bg-blue-400/20 transition">
+
+              <button
+                onClick={handleCreatePlaylist}
+                className="px-6 py-3 border border-blue-400 text-blue-300 rounded-lg hover:bg-blue-400/20 transition cursor-pointer"
+              >
                 Create Playlist
               </button>
             </div>

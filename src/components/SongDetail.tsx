@@ -64,6 +64,7 @@ const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
 const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showNotification, setShowNotification] = useState(false);
 
   // --- States ---
   const [hovered, setHovered] = useState<number | null>(null);
