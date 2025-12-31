@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaSun,
   FaMoon,
@@ -10,14 +10,17 @@ import {
   FaBars,
   FaArrowRight,
 } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
 import { getCurrentUser, isAuthenticated } from "../routes/authContext";
-
+import { searchContent } from "../data/searchData";
 interface NavBarProps {
   isLightMode: boolean;
   setIsLightMode: (value: boolean) => void;
 }
 
 const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
@@ -27,6 +30,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   const [voiceText, setVoiceText] = useState("");
   const [displayText, setDisplayText] = useState("");
   const [hasSpoken, setHasSpoken] = useState(false);
+  const [searchResults, setSearchResults] = useState<any>(null);
 
   // Initialize Web Speech API
   const SpeechRecognition =
@@ -83,6 +87,14 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       setUserData(getCurrentUser());
     }
   }, []);
+
+  // Clear search query 
+  useEffect(() => {
+    if (!location.pathname.startsWith("/search") && searchQuery) {
+      setSearchQuery("");
+      setSearchResults(null);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!voiceText) {
@@ -156,8 +168,15 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   };
 
   const performSearch = (query: string) => {
-    console.log("Searching for:", query);
-    //------------------------------------
+    if (!query.trim()) return;
+
+    // Perform search 
+    const results = searchContent(query);
+    setSearchResults(results);
+    console.log("Search Results:", results);
+
+    // Navigate to search result page with query 
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const headerBg = isLightMode
@@ -178,12 +197,12 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
           setIsVoiceSearchOpen(false);
           stopVoiceSearch();
         }}
-        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors"
+        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors z-50"
       >
         <FaTimes className="h-8 w-8" />
       </button>
+
       <div className="relative w-full h-screen flex flex-col items-center justify-center px-8">
-        {/* Fixed center area for mic and status */}
         <div className="flex flex-col items-center gap-6">
           <div
             className={`w-56 h-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
@@ -229,17 +248,27 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   );
 
   return (
-    <header
-      className={`w-full border-b px-4 md:px-8 py-2 flex items-center justify-between ${headerBg}`}
-    >
+   <header
+  className={`w-full border-b px-4 md:px-8 py-4 min-h-[90px] flex items-center justify-between ${headerBg}`}
+>
+
       {isVoiceSearchOpen && <VoiceSearchModal />}
 
       {/* Logo */}
       <NavLink
         to="/"
-        className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500"
+        className="flex items-center gap-3 text-2xl md:text-3xl font-bold"
       >
-        Echo Panda
+        <img
+          src="/logo.png"
+          alt="Echo Panda Logo"
+          className="h-10 md:h-12 w-auto"
+        />
+
+        {/* Text */}
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+          Echo Panda
+        </span>
       </NavLink>
 
       {/* Search */}
@@ -250,7 +279,15 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setSearchQuery(val);
+            if (!val.trim()) {
+              //  remove search results and go home
+              setSearchResults(null);
+              navigate("/");
+            }
+          }}
           onKeyPress={(e) => {
             if (e.key === "Enter" && searchQuery.trim()) {
               performSearch(searchQuery);
@@ -273,10 +310,17 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
           ) : (
             <div
               className="text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
-              onClick={() => setIsVoiceSearchOpen(true)}
-              title="Voice search"
+              onClick={() => {
+                if (isVoiceSearchOpen) {
+                  setIsVoiceSearchOpen(false);
+                  stopVoiceSearch();
+                } else {
+                  setIsVoiceSearchOpen(true);
+                }
+              }}
+              title={isVoiceSearchOpen ? "Close voice search" : "Voice search"}
             >
-              <FaMicrophone />
+              {isVoiceSearchOpen ? <FaTimes /> : <FaMicrophone />}
             </div>
           )}
         </div>
@@ -313,23 +357,23 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
           </NavLink>
         ) : (
           <>
+            {/* Login */}
             <NavLink
               to="/login"
-              className={`px-4 py-2 text-base font-medium rounded-full ${
-                isLightMode
-                  ? "text-blue-600 hover:text-blue-500"
-                  : "text-blue-500 hover:text-blue-400"
-              }`}
+              className="px-7 py-2.5 text-base font-semibold rounded-full border border-blue-500 text-blue-500
+                        hover:bg-blue-500 hover:text-white hover:shadow-md
+                        transition-all duration-300"
             >
               Login
             </NavLink>
+
+            {/* Sign Up */}
             <NavLink
               to="/register"
-              className={`px-4 py-2 text-base font-medium rounded-full ${
-                isLightMode
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
+              className="px-6 py-2.5 text-base font-semibold rounded-full
+                        bg-gradient-to-r from-blue-500 to-purple-600 text-white
+                        shadow-md hover:shadow-blue-500/40 hover:scale-105
+                        transition-all duration-300"
             >
               Sign Up
             </NavLink>
