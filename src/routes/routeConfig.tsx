@@ -28,14 +28,29 @@ import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
 
+// Admin 
+import { Navigate } from "react-router-dom";
+import AdminLayout from "../admin/AdminLayout";
+import Dashboard from "../admin/pages/Dashboard";
+import Admins from "../admin/pages/Admins";
+import Users from "../admin/pages/Users";
+import Favorites from "../admin/pages/Favorites";
+import Artists from "../admin/pages/Artists";
+import Songs from "../admin/pages/Songs";
+import Categories from "../admin/pages/Categories";
+import PlaylistsReport from "../admin/pages/PlaylistsReport";
+import AdminSettings from "../admin/pages/AdminSettings";
+
 export interface RouteConfig {
   path: string;
   label: string;
   icon: React.ElementType | null;
-   component?: React.ComponentType<any>;
-  group: "menu" | "library" | "playlist" | "general" | "auth" | "other";
+  component?: React.ComponentType<any>;
+  group: "menu" | "library" | "playlist" | "general" | "auth" | "other" | "admin";
   requiresAuth?: boolean;
   showInSidebar?: boolean;
+  role?: "admin" | "user"; 
+  layout?: React.ComponentType<any>; 
 }
 const injectProps = (Component: React.ComponentType<any>, props: any) => {
   return () => <Component {...props} />;
@@ -192,12 +207,123 @@ export const routeConfig: RouteConfig[] = [
   group: "other",
   showInSidebar: false,
   icon: null,
-}
+},
+
+// Admin routes 
+{
+  path: "/admin",
+  label: "Admin shortcut",
+  icon: null,
+  component: () => <Navigate to="/admin/dashboard" replace />,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/dashboard",
+  label: "Dashboard",
+  icon: null,
+  component: Dashboard,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false, 
+  role: "admin",
+},
+{
+  path: "/admin/admins",
+  label: "Admins",
+  icon: null,
+  component: Admins,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/users",
+  label: "Users",
+  icon: null,
+  component: Users,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/favorites",
+  label: "Favorites",
+  icon: null,
+  component: Favorites,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/artists",
+  label: "Artists",
+  icon: null,
+  component: Artists,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/songs",
+  label: "Songs",
+  icon: null,
+  component: Songs,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/categories",
+  label: "Categories",
+  icon: null,
+  component: Categories,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/playlists-report",
+  label: "Playlists Report",
+  icon: null,
+  component: PlaylistsReport,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/settings",
+  label: "Admin Settings",
+  icon: FaCog,
+  component: AdminSettings,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+
 ]
-// Helper function to get sidebar links
+
 export const getSidebarLinks = (): RouteConfig[] => {
-  return routeConfig.filter((route) => route.showInSidebar === true);
+  return routeConfig.filter(
+    (route) => route.showInSidebar === true && route.group !== "admin"
+  );
 };
+
+export const getAdminSidebarLinks = (): RouteConfig[] => {
+  return routeConfig.filter(
+    (route) => route.showInSidebar === true && route.group === "admin"
+  );
+};
+
 
 // Helper function to get routes by group
 export const getRoutesByGroup = (
