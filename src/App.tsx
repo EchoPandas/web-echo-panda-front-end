@@ -3,11 +3,7 @@ import router from './routes/route';
 import HomeLayout from './layouts/HomeLayout';
 
 function App() {
-  return (
-    <RouterProvider router={router}>
-      <Route path="/" element={<HomeLayout />}></Route>
-    </RouterProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
