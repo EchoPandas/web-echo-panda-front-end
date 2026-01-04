@@ -1,7 +1,18 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import HomeLayout from "../layouts/HomeLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import { routeConfig } from "./routeConfig";
+
+import AdminLayout from "../admin/AdminLayout";
+import Dashboard from "../admin/pages/Dashboard";
+import Admins from "../admin/pages/Admins";
+import Users from "../admin/pages/Users";
+import Songs from "../admin/pages/Songs";
+import Categories from "../admin/pages/Categories";
+import Artists from "../admin/pages/Artists";
+import Favorites from "../admin/pages/Favorites";
+import PlaylistsReport from "../admin/pages/PlaylistsReport";
+import AdminSettings from "../admin/pages/AdminSettings";
 
 // Get main routes (menu, library, playlist, general) for HomeLayout
 const mainRoutes = routeConfig.filter(
@@ -37,6 +48,23 @@ const router = createBrowserRouter([
       element: route.component ? <route.component /> : null,
     })),
   },
+  {
+    element: <AdminLayout />,
+    children: [
+      { path: "/admin", element: <Navigate to="/admin/dashboard" replace /> },
+      { path: "/admin/dashboard", element: <Dashboard /> },
+      { path: "/admin/admins", element: <Admins /> },
+      { path: "/admin/users", element: <Users /> },
+      { path: "/admin/songs", element: <Songs /> },
+      { path: "/admin/categories", element: <Categories /> },
+      { path: "/admin/artists", element: <Artists /> },
+      { path: "/admin/favorites", element: <Favorites /> },
+      { path: "/admin/playlists-report", element: <PlaylistsReport /> },
+      { path: "/admin/settings", element: <AdminSettings /> },
+
+    ],
+  },
+  
 ]);
 
 export default router;
