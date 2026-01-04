@@ -19,28 +19,16 @@ interface SongItem {
   userEmail: string;
 }
 
-const sampleFavorites: SongItem[] = [
-  {
-    id: 1,
-    title: "Favorite Song 1",
-    artist: "Artist A",
-    date: "2025-01-01",
-    album: "Album 1",
-    duration: "3:20",
-    color: "bg-gray-400",
-    userEmail: "test@gmail.com",
-  },
-  {
-    id: 2,
-    title: "Favorite Song 2",
-    artist: "Artist B",
-    date: "2025-01-02",
-    album: "Album 2",
-    duration: "2:58",
-    color: "bg-gray-500",
-    userEmail: "other@gmail.com",
-  },
-];
+const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  title: `Song ${i + 1}`,
+  artist: `Artist ${i + 1}`,
+  date: "2024-01-01",
+  album: `Album ${i + 1}`,
+  duration: `${2 + (i % 4)}:${(10 + i).toString().slice(-2)}`,
+  color: "bg-gray-400",
+  userEmail: "", // Not used
+}));
 
 const Favorites: React.FC = () => {
   const [favorites, setFavorites] = useState<SongItem[]>([]);
@@ -55,29 +43,43 @@ const Favorites: React.FC = () => {
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const loadFavorites = async () => {
+    const loadFavorites = () => {
       setLoading(true);
-      const user = getCurrentUser();
-      if (!user) {
+      const savedFavs = localStorage.getItem('Your Favorite');
+      if (savedFavs) {
+        const favRecord: Record<number, boolean> = JSON.parse(savedFavs);
+        const favIds = Object.keys(favRecord).filter(id => favRecord[parseInt(id)]);
+        const favSongs = sampleSongs.filter(song => favIds.includes(song.id.toString()));
+        setFavorites(favSongs);
+      } else {
         setFavorites([]);
-        setLoading(false);
-        return;
       }
-      const userFavorites = sampleFavorites.filter(
-        (song) => song.userEmail === user.email
-      );
-      setFavorites(userFavorites);
       setLoading(false);
     };
     loadFavorites();
+
+    // Listen for storage updates
+    const handleStorageChange = () => {
+      loadFavorites();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const removeFavorite = (id: number) => {
     setFavorites((prev) => prev.filter((s) => s.id !== id));
+    const savedFavs = localStorage.getItem('Your Favorite');
+    if (savedFavs) {
+      const favRecord: Record<number, boolean> = JSON.parse(savedFavs);
+      favRecord[id] = false;
+      localStorage.setItem('Your Favorite', JSON.stringify(favRecord));
+    }
   };
 
   const clearAll = () => {
     setFavorites([]);
+    localStorage.removeItem('Your Favorite');
   };
 
   const handleHeartClick = (e: React.MouseEvent, songId: number) => {

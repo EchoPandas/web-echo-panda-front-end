@@ -21,11 +21,12 @@ import AboutUs from "../pages/AboutUs";
 import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
 import FavoritesPage from "../pages/Favorites";
-import { Playlist, Settings } from "./placeholderComponents";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
 import SearchPage from "../pages/SearchPage";
+import Playlist from "../pages/Playlist";
+import Settings from "../pages/Settings";
 
 export interface RouteConfig {
   path: string;
@@ -74,7 +75,7 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
 
-  // Library routes
+
   {
     path: "/recently-added",
     label: "Recently Added",
@@ -110,7 +111,6 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
 
-  // General routes
   {
     path: "/settings",
     label: "Settings",

@@ -5,9 +5,29 @@ import PlaylistSongs from './playList/PlaylistSongs';
 import AppFooter from './home/AppFooter';
 import { FaPlay, FaRandom, FaHeart } from 'react-icons/fa';
 
+interface SongItem {
+  id: number;
+  title: string;
+  artist: string;
+  date: string;
+  album: string;
+  duration: string;
+  color: string;
+}
+
+const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  title: `Song ${i + 1}`,
+  artist: `Artist ${i + 1}`,
+  date: "2024-01-01",
+  album: `Album ${i + 1}`,
+  duration: `${2 + (i % 4)}:${(10 + i).toString().slice(-2)}`,
+  color: "bg-gray-400",
+}));
+
 const Playlist: React.FC = () => {
   const isLightMode = false;
-  const [songs, setSongs] = useState<any[]>([]);
+  const [songs, setSongs] = useState<SongItem[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -23,23 +43,32 @@ const Playlist: React.FC = () => {
   }, []);
 
   const loadSongs = () => {
-    const savedSongs = localStorage.getItem('playlistSongs');
-    if (savedSongs) {
+    const savedPlaylists = localStorage.getItem('Your Playlist');
+    if (savedPlaylists) {
       try {
-        const parsedSongs = JSON.parse(savedSongs);
-        setSongs(parsedSongs);
+        const playlistRecord: Record<number, boolean> = JSON.parse(savedPlaylists);
+        const playlistIds = Object.keys(playlistRecord).filter(id => playlistRecord[parseInt(id)]);
+        const playlistSongs = sampleSongs.filter(song => playlistIds.includes(song.id.toString()));
+        setSongs(playlistSongs);
       } catch (error) {
         console.error('Error loading playlist:', error);
         setSongs([]);
       }
+    } else {
+      setSongs([]);
     }
   };
 
   const handleDeleteSong = (songId: string) => {
     // Filter out the deleted song
-    const updatedSongs = songs.filter(song => song.id !== songId);
+    const updatedSongs = songs.filter(song => song.id.toString() !== songId);
     setSongs(updatedSongs);
-    localStorage.setItem('playlistSongs', JSON.stringify(updatedSongs));
+    const savedPlaylists = localStorage.getItem('Your Playlist');
+    if (savedPlaylists) {
+      const playlistRecord: Record<number, boolean> = JSON.parse(savedPlaylists);
+      playlistRecord[parseInt(songId)] = false;
+      localStorage.setItem('Your Playlist', JSON.stringify(playlistRecord));
+    }
     window.dispatchEvent(new Event('storage'));
     console.log('Deleted song:', songId);
   };
@@ -61,7 +90,7 @@ const Playlist: React.FC = () => {
 
   const clearPlaylist = () => {
     if (window.confirm('Are you sure you want to clear the entire playlist?')) {
-      localStorage.removeItem('playlistSongs');
+      localStorage.removeItem('Your Playlist');
       setSongs([]);
       window.dispatchEvent(new Event('storage'));
     }

@@ -69,6 +69,7 @@ const SongDetails: React.FC = () => {
   // --- States ---
   const [hovered, setHovered] = useState<number | null>(null);
   const [favs, setFavs] = useState<Record<number, boolean>>({});
+  const [playlists, setPlaylists] = useState<Record<number, boolean>>({});
   const [showSidebar, setShowSidebar] = useState<boolean>(false); // Control Sidebar visibility
   const [contextMenu, setContextMenu] = useState<{
     songId: number;
@@ -79,9 +80,37 @@ const SongDetails: React.FC = () => {
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const song: SongData = mockSongsData[id || '1'] || mockSongsData['1'];
 
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedFavs = localStorage.getItem('Your Favorite');
+    if (savedFavs) {
+      setFavs(JSON.parse(savedFavs));
+    }
+    const savedPlaylists = localStorage.getItem('Your Playlist');
+    if (savedPlaylists) {
+      setPlaylists(JSON.parse(savedPlaylists));
+    }
+  }, []);
+
+  // Save to localStorage when favs change
+  useEffect(() => {
+    localStorage.setItem('Your Favorite', JSON.stringify(favs));
+    window.dispatchEvent(new Event('storage'));
+  }, [favs]);
+
+  // Save to localStorage when playlists change
+  useEffect(() => {
+    localStorage.setItem('Your Playlist', JSON.stringify(playlists));
+    window.dispatchEvent(new Event('storage'));
+  }, [playlists]);
+
   // --- Handlers ---
   const toggleFav = (id: number) => {
     setFavs((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const togglePlaylist = (id: number) => {
+    setPlaylists((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleSongClick = (songId: number) => {
@@ -198,6 +227,39 @@ const SongDetails: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Context Menu for Heart Click */}
+          {contextMenu && (
+            <div
+              ref={contextMenuRef}
+              className="fixed bg-gray-800 text-white p-3 rounded-lg shadow-xl z-50 border border-gray-600"
+              style={{ left: contextMenu.x, top: contextMenu.y }}
+            >
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    toggleFav(contextMenu.songId);
+                    closeContextMenu();
+                  }}
+                  className="flex items-center gap-2 w-full text-left hover:bg-gray-700 px-3 py-2 rounded transition-colors"
+                >
+                  <FaHeart size={14} />
+                  Add to Favorite
+                </button>
+                <button
+                  onClick={() => {
+                    console.log(`Add song ${contextMenu.songId} to playlist`);
+                    togglePlaylist(contextMenu.songId);
+                    closeContextMenu();
+                  }}
+                  className="flex items-center gap-2 w-full text-left hover:bg-gray-700 px-3 py-2 rounded transition-colors"
+                >
+                  <FaListUl size={14} />
+                  Add to Playlist
+                </button>
+              </div>
+            </div>
+          )}
         </main>
 
         {/* RIGHT SIDEBAR: Now conditionally rendered with showSidebar state */}
@@ -233,7 +295,10 @@ const SongDetails: React.FC = () => {
               </div>
               <div className="flex gap-5 items-center shrink-0">
                  <button onClick={() => toggleFav(parseInt(id || '1'))}>
-                   <FaHeart size={26} className={favs[parseInt(id || '1')] ? "text-blue-500" : "text-blue-500/40"} />
+                   <FaHeart size={26} className={favs[parseInt(id || '1')] ? "text-red-500" : "text-white/40 hover:text-white"} />
+                 </button>
+                 <button onClick={() => togglePlaylist(parseInt(id || '1'))}>
+                   <FaListUl size={26} className={playlists[parseInt(id || '1')] ? "text-blue-500" : "text-white/40 hover:text-white"} />
                  </button>
               </div>
             </div>
@@ -257,6 +322,18 @@ const SongDetails: React.FC = () => {
                     <p className="text-gray-500 text-xs">{credit.role}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* 5. Next Song */}
+            <div className="bg-[#0f0f25] border border-blue-900/50 rounded-[25px] p-6">
+              <h4 className="text-white font-bold text-lg mb-4">Next Song</h4>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gray-400 rounded-lg shrink-0"></div>
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-bold truncate">Next Song Title</p>
+                  <p className="text-gray-500 text-xs">Next Artist</p>
+                </div>
               </div>
             </div>
           </aside>
