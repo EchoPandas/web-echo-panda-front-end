@@ -90,7 +90,7 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
 
-  // Library routes
+
   {
     path: "/recently-added",
     label: "Recently Added",
@@ -126,7 +126,6 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
 
-  // General routes
   {
     path: "/settings",
     label: "Settings",
