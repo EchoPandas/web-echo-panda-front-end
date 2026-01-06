@@ -1,97 +1,44 @@
-
 import React from 'react';
-import { Music, Users, Globe, Clock } from 'lucide-react';
+import { Music, Clock, User } from 'lucide-react';
 
-interface PlaylistHeroProps {
-  playlistId?: string;
-  title?: string;
-  isLightMode?: boolean;
-  songCount?: number;
-  duration?: string;
+interface Props {
+  title: string;
+  songCount: number;
+  duration: string;
 }
 
-export const PlaylistHero: React.FC<PlaylistHeroProps> = ({ 
-  title = "My Playlist", 
-  isLightMode = false,
-  songCount = 0,
-  duration = "0:00"
-}) => {
-  const gradientClass = isLightMode 
-    ? 'bg-gradient-to-b from-blue-50 to-white' 
-    : 'bg-gradient-to-b from-blue-950/40 via-blue-900/20 to-black';
-
+export const PlaylistHero: React.FC<Props> = ({ title, songCount, duration }) => {
   return (
-    <header className={`px-8 pt-24 pb-10 ${gradientClass}`}>
-      <div className="flex items-end gap-8">
-        {/* Album Art */}
-        <div className="relative group">
-          <div className="w-64 h-64 bg-linear-to-br from-green-500/20 to-blue-600/20 shadow-2xl rounded-2xl flex items-center justify-center border border-white/10 backdrop-blur-sm">
-            <Music className="w-24 h-24 text-white/30" />
-          </div>
-          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent rounded-2xl" />
-          <div className="absolute -bottom-3 -right-3 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg border-4 border-black">
-            <Users className="w-5 h-5 text-black" />
-          </div>
+    <header className="relative px-4 sm:px-8 pt-20 sm:pt-24 pb-8 bg-linear-to-b from-blue-600/30 via-blue-950/20 to-black overflow-hidden">
+      {/* Background blur circle */}
+      <div className="absolute top-0 -left-16 sm:-left-20 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Content */}
+      <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 relative z-10">
+        {/* Music icon / Album art */}
+        <div className="w-40 sm:w-52 lg:w-60 h-40 sm:h-52 lg:h-60 bg-linear-to-br from-white/10 to-white/5 backdrop-blur-md rounded-xl flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 group">
+          <Music className="text-white/20 w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-700" />
         </div>
-        
-        {/* Playlist Info */}
-        <div className="pb-6 flex-1">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-bold uppercase bg-white/10 px-3 py-1.5 rounded-full text-blue-300 flex items-center gap-1.5">
-              <Globe className="w-3 h-3" />
-              Public Playlist
-            </span>
-            <span className="text-xs text-gray-400">•</span>
-            <span className="text-sm text-gray-400">Updated today</span>
-          </div>
-          
-          <h1 className="text-8xl font-black text-transprarent tracking-tighter mb-6 bg-linear-to-r from-white via-green-100 to-blue-200 bg-clip-text text-transparent">
-            {title}
-          </h1>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-linear-to-r from-green-400 to-blue-500 flex items-center justify-center">
-                <span className="text-xs font-bold">Y</span>
+
+        {/* Text Info */}
+        <div className="flex flex-col gap-2 sm:gap-3 text-center md:text-left">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-blue-400">Public Playlist</span>
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white tracking-tight truncate">{title}</h1>
+
+          {/* Meta info */}
+          <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-gray-300">
+            <div className="flex items-center gap-1">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                <User className="text-white w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </div>
-              <span className="text-white font-medium">Your Playlist</span>
+              <span className="text-white hover:underline cursor-pointer">User</span>
             </div>
-            
-            <div className="flex items-center gap-6 text-gray-400">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-linear-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center">
-                  <span className="text-xs">♪</span>
-                </div>
-                <span className="text-sm">{songCount} songs</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm">{duration}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm">{songCount > 0 ? 'Ready to play' : 'Empty playlist'}</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Stats Bar */}
-          <div className="mt-8 flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">Followers</span>
-              <span className="text-white font-bold">1</span>
-            </div>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">Likes</span>
-              <span className="text-white font-bold">0</span>
-            </div>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">Plays</span>
-              <span className="text-white font-bold">{songCount * 2}</span>
+            <span>•</span>
+            <span>{songCount} songs</span>
+            <span>•</span>
+            <div className="flex items-center gap-1 text-gray-400">
+              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span>{duration}</span>
             </div>
           </div>
         </div>

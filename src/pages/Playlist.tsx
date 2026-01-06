@@ -1,10 +1,10 @@
-// src/pages/Playlist.tsx
 import React, { useState, useEffect } from 'react';
+import { FaPlay, FaRandom, FaHeart, FaMusic, FaTrash, FaList, FaPlus } from 'react-icons/fa';
 import { PlaylistHero } from './playList/PlaylistHero';
 import PlaylistSongs from './playList/PlaylistSongs';
 import AppFooter from './home/AppFooter';
-import { FaPlay, FaRandom, FaHeart } from 'react-icons/fa';
 
+// --- Types ---
 interface SongItem {
   id: number;
   title: string;
@@ -13,137 +13,234 @@ interface SongItem {
   album: string;
   duration: string;
   color: string;
+  coverUrl?: string;
 }
 
-const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
+interface CustomPlaylist {
+  id: string;
+  name: string;
+  songIds: number[];
+  createdAt: string;
+}
+
+const getTodayDate = (): string => {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const sampleSongs: SongItem[] = Array.from({ length: 12 }, (_, i) => ({
   id: i + 1,
   title: `Song ${i + 1}`,
-  artist: `Artist ${i + 1}`,
-  date: "2024-01-01",
-  album: `Album ${i + 1}`,
-  duration: `${2 + (i % 4)}:${(10 + i).toString().slice(-2)}`,
-  color: "bg-gray-400",
+  artist: `Artist ${String.fromCharCode(65 + i)}`,
+  date: getTodayDate(),
+  album: `Album ${Math.ceil((i + 1) / 3)}`,
+  duration: `${3 + (i % 2)}:${String(10 + (i * 5) % 50).padStart(2, '0')}`,
+  color: 'bg-blue-500',
+  coverUrl: `https://picsum.photos/seed/${i + 50}/200/200`,
 }));
 
+
+// --- Create Playlist Modal ---
+const CreatePlaylistModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (name: string) => void;
+}> = ({ isOpen, onClose, onConfirm }) => {
+  const [name, setName] = useState('');
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-[#181818] w-full max-w-sm rounded-3xl p-8 border border-white/10 shadow-2xl scale-in-center">
+        <h2 className="text-2xl font-black text-white mb-6">New Playlist</h2>
+        <input
+          autoFocus
+          type="text"
+          placeholder="Playlist name"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white mb-6 outline-none focus:border-blue-500 transition-all"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && name.trim() && onConfirm(name)}
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 text-gray-400 font-bold hover:text-white transition">
+            Cancel
+          </button>
+          <button
+            disabled={!name.trim()}
+            onClick={() => onConfirm(name)}
+            className="flex-1 py-3 rounded-full font-bold bg-blue-500 text-white hover:bg-blue-400 transition disabled:opacity-50"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Playlist Page ---
 const Playlist: React.FC = () => {
-  const isLightMode = false;
   const [songs, setSongs] = useState<SongItem[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([]);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Load playlists and songs
+  const loadAllData = () => {
+    const savedPlaylists: CustomPlaylist[] = JSON.parse(localStorage.getItem('customPlaylists') || '[]');
+    setCustomPlaylists(savedPlaylists);
+
+    if (selectedPlaylistId) {
+      const current = savedPlaylists.find((p) => p.id === selectedPlaylistId);
+      setSongs(current ? sampleSongs.filter(s => current.songIds.includes(s.id)) : []);
+      if (!current) setSelectedPlaylistId(null);
+    } else {
+      setSongs([]); 
+    }
+  };
 
   useEffect(() => {
-    loadSongs();
-    
-    // Listen for storage updates
-    const handleStorageChange = () => {
-      loadSongs();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    loadAllData();
+    window.addEventListener('storage', loadAllData);
+    return () => window.removeEventListener('storage', loadAllData);
+  }, [selectedPlaylistId]);
 
-  const loadSongs = () => {
-    const savedPlaylists = localStorage.getItem('Your Playlist');
-    if (savedPlaylists) {
-      try {
-        const playlistRecord: Record<number, boolean> = JSON.parse(savedPlaylists);
-        const playlistIds = Object.keys(playlistRecord).filter(id => playlistRecord[parseInt(id)]);
-        const playlistSongs = sampleSongs.filter(song => playlistIds.includes(song.id.toString()));
-        setSongs(playlistSongs);
-      } catch (error) {
-        console.error('Error loading playlist:', error);
-        setSongs([]);
-      }
-    } else {
+  // --- Handlers ---
+  const handleCreatePlaylist = (name: string) => {
+    const newPlaylist = { id: `pl_${Date.now()}`, name, songIds: [], createdAt: new Date().toISOString() };
+    const updated = [...customPlaylists, newPlaylist];
+    localStorage.setItem('customPlaylists', JSON.stringify(updated));
+    setCustomPlaylists(updated);
+    setSelectedPlaylistId(newPlaylist.id);
+    setIsModalOpen(false);
+    showToast(`Playlist "${name}" created!`);
+  };
+
+  const deletePlaylist = (id: string) => {
+    const playlist = customPlaylists.find(p => p.id === id);
+    if (!playlist) return;
+
+    const updated = customPlaylists.filter(p => p.id !== id);
+    localStorage.setItem('customPlaylists', JSON.stringify(updated));
+    setCustomPlaylists(updated);
+
+    if (selectedPlaylistId === id) {
+      setSelectedPlaylistId(null);
       setSongs([]);
     }
+
+    showToast(`Playlist "${playlist.name}" deleted`);
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleDeleteSong = (songId: string) => {
-    // Filter out the deleted song
-    const updatedSongs = songs.filter(song => song.id.toString() !== songId);
-    setSongs(updatedSongs);
-    const savedPlaylists = localStorage.getItem('Your Playlist');
-    if (savedPlaylists) {
-      const playlistRecord: Record<number, boolean> = JSON.parse(savedPlaylists);
-      playlistRecord[parseInt(songId)] = false;
-      localStorage.setItem('Your Playlist', JSON.stringify(playlistRecord));
+    if (selectedPlaylistId) {
+      const updated = customPlaylists.map(p =>
+        p.id === selectedPlaylistId ? { ...p, songIds: p.songIds.filter(id => id !== parseInt(songId)) } : p
+      );
+      localStorage.setItem('customPlaylists', JSON.stringify(updated));
     }
+    loadAllData();
     window.dispatchEvent(new Event('storage'));
-    console.log('Deleted song:', songId);
-  };
-  const totalDuration = songs.reduce((total, song) => {
-    const [min, sec] = (song.duration || '3:30').split(':').map(Number);
-    return total + (min * 60) + (sec || 0);
-  }, 0);
-  
-  const totalMinutes = Math.floor(totalDuration / 60);
-  const totalSeconds = totalDuration % 60;
-  const formattedDuration = `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
-  const handlePlayAll = () => {
-    setIsPlaying(!isPlaying);
-  };
-  const handleShuffle = () => {
-    const shuffled = [...songs].sort(() => Math.random() - 0.5);
-    setSongs(shuffled);
   };
 
-  const clearPlaylist = () => {
-    if (window.confirm('Are you sure you want to clear the entire playlist?')) {
-      localStorage.removeItem('Your Playlist');
-      setSongs([]);
-      window.dispatchEvent(new Event('storage'));
-    }
+  const currentName = selectedPlaylistId
+    ? customPlaylists.find(p => p.id === selectedPlaylistId)?.name
+    : 'Your Library';
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const hasSongs = songs.length > 0;
+
   return (
-    <div className={`min-h-screen overflow-x-hidden ${isLightMode ? 'bg-white' : 'bg-linear-to-b from-blue-950/20 via-black to-black'}`}>
-      <PlaylistHero title="My Playlist" songCount={songs.length} duration={formattedDuration} />
-      
-      {/* Play Controls */}
-      <div className="px-8 pb-8">
-        <div className="flex items-center gap-6">
-          <button 
-            onClick={handlePlayAll}
-            className="bg-green-500 hover:bg-green-600 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={songs.length === 0}
-          >
-            <FaPlay size={24} className="ml-1" />
-          </button>
-          
-          <button 
-            onClick={handleShuffle}
-            className={`p-3 rounded-full ${isLightMode ? 'hover:bg-gray-200' : 'hover:bg-white/10'} transition disabled:opacity-50 disabled:cursor-not-allowed`}
-            disabled={songs.length === 0}
-          >
-            <FaRandom size={22} className={isLightMode ? 'text-gray-700' : 'text-gray-400'} />
-          </button>
-          
-          <button className={`p-3 rounded-full ${isLightMode ? 'hover:bg-gray-200' : 'hover:bg-white/10'} transition disabled:opacity-50 disabled:cursor-not-allowed`}
-            disabled={songs.length === 0}
-          >
-            <FaHeart size={22} className="text-gray-400 hover:text-red-500 transition" />
-          </button>
-          
-          <div className="ml-auto flex items-center gap-3">
-            {songs.length > 0 && (
-              <button 
-                onClick={clearPlaylist}
-                className="text-sm px-4 py-2 rounded-full bg-linear-to-r from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition"
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30">
+      <CreatePlaylistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onConfirm={handleCreatePlaylist} />
+
+      {/* KEEP HERO */}
+      <PlaylistHero title={currentName || 'Library'} songCount={songs.length} duration={`${songs.length * 3} min`} />
+
+      <main className="px-8 -mt-10 relative z-10">
+        {/* Library Cards */}
+        <section className="mb-10 mt-5">
+          <h3 className="text-xs font-bold uppercase text-gray-300 mb-5">Your Library</h3>
+
+          <div className="flex gap-5 overflow-x-auto pb-6 no-scrollbar mask-fade-right mt-5">
+            {/* Create Card */}
+            <div
+              onClick={() => setIsModalOpen(true)}
+              className="shrink-0 w-44 p-5 rounded-4xl bg-white/5 border border-dashed border-white/10 hover:border-blue-500/50 hover:bg-white/10 cursor-pointer transition-all group"
+            >
+              <div className="aspect-square rounded-3xl bg-white/5 flex items-center justify-center mb-4 group-hover:scale-105 transition duration-300">
+                <FaPlus size={28} className="text-gray-500 group-hover:text-blue-500" />
+              </div>
+              <p className="text-sm font-bold text-center group-hover:text-blue-500 transition">Create New</p>
+            </div>
+
+            {/* Custom Playlists */}
+            {customPlaylists.map(p => (
+              <div
+                key={p.id}
+                onClick={() => setSelectedPlaylistId(p.id)}
+                className={`group shrink-0 w-44 p-5 rounded-4xl cursor-pointer transition-all duration-300 relative ${
+                  selectedPlaylistId === p.id ? 'bg-white/15 ring-2 ring-white/20' : 'bg-white/5 hover:bg-white/10'
+                }`}
               >
-                Clear All
-              </button>
-            )}
-            <button className={`text-sm px-4 py-2 rounded-full border ${isLightMode ? 'border-gray-300 hover:bg-gray-100' : 'border-white/20 hover:bg-white/10'} transition`}>
-              Sort by
-            </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deletePlaylist(p.id); }}
+                  className="absolute top-7 right-7 z-20 opacity-0 group-hover:opacity-100 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition shadow-xl scale-75 group-hover:scale-100"
+                >
+                  <FaTrash size={12} />
+                </button>
+                <div className="aspect-square rounded-3xl bg-neutral-900 flex items-center justify-center mb-4 shadow-xl overflow-hidden">
+                  <FaMusic size={35} className="text-neutral-700 group-hover:text-blue-500/50 transition" />
+                </div>
+                <p className="text-sm font-bold truncate text-center px-2">{p.name}</p>
+              </div>
+            ))}
           </div>
+        </section>
+
+        {/* Show Action Bar & Songs List only if user has songs */}
+        {hasSongs && (
+          <>
+            {/* Action Bar */}
+            <div className="flex items-center gap-8 bg-white/2 p-4 border border-white/5 backdrop-blur-md">
+              <button className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30 hover:scale-105 active:scale-95 transition">
+                <FaPlay size={20} className="ml-1" />
+              </button>
+              <button className="text-gray-500 hover:text-white transition"><FaRandom size={22} /></button>
+              <div className="h-6 w-px bg-white/10" />
+              <p className="text-sm font-bold text-gray-400">{songs.length} Tracks in this set</p>
+              <div className="ml-auto flex gap-4 text-gray-500 pr-4">
+                <FaList size={18} className="cursor-pointer hover:text-white" />
+              </div>
+            </div>
+
+            {/* Songs List */}
+            <div className="bg-white/1 border border-white/5 overflow-hidden backdrop-blur-2xl mb-20 cursor-pointer">
+              <PlaylistSongs songs={songs} onDelete={handleDeleteSong} />
+            </div>
+          </>
+        )}
+      </main>
+
+      <AppFooter isLightMode={false} />
+
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-slide-up z-50">
+          {toastMessage}
         </div>
-      </div>
-      
-      <div className={`px-8 pb-24 ${isLightMode ? 'text-black' : 'text-white'}`}>
-        <PlaylistSongs songs={songs} onDelete={handleDeleteSong} />
-      </div>
-      <AppFooter isLightMode={isLightMode} />
+      )}
     </div>
   );
 };

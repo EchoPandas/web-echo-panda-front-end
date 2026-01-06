@@ -32,7 +32,7 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true,
           <div
             key={artist.id}
             onClick={() => navigate(`/artist?id=${artist.id}`)}
-            className="flex flex-col items-center flex-shrink-0 w-28 snap-start cursor-pointer"
+            className="flex flex-col items-center shrink-0 w-28 snap-start cursor-pointer"
           >
             <div className="rounded-full bg-gray-500 mb-2 transition hover:scale-105 w-24 h-24 sm:w-28 sm:h-28"></div>
             <p className={`text-center text-sm ${textColor}`}>{artist.name}</p>
