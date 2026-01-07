@@ -1,58 +1,117 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  FaEye, FaEdit, FaSearch, FaBan, 
-  FaCheckCircle, FaTrashAlt, FaMars, FaVenus, FaGenderless, FaCalendarAlt
-} from "react-icons/fa";
+import React, { useMemo, useState, useEffect } from "react";
+import { FaSearch, FaCalendarAlt, FaSpinner, FaCopy, FaCheck, FaBan, FaCheckCircle } from "react-icons/fa";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { app } from "../../routes/firebaseConfig";
 
-type Role = "user" | "admin";
-type Status = "active" | "blocked";
-type Gender = "Male" | "Female" | "Other";
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 interface UserItem {
   id: string;
-  avatar?: string;
-  name: string;
+  photoURL?: string;
+  displayName: string;
   email: string;
-  gender: Gender;
-  age: number;
-  registerDate: string;
-  role: Role;
-  status: Status;
+  registeredAt: string;
+  status: "active" | "blocked";
 }
 
-const MOCK_USERS: UserItem[] = [
-  { id: "1", avatar: "https://i.pravatar.cc/150?img=1", name: "John Doe", email: "john@gmail.com", gender: "Male", age: 28, registerDate: "2024-01-12", role: "user", status: "active" },
-  { id: "2", avatar: "https://i.pravatar.cc/150?img=5", name: "Sarah Smith", email: "sarah@gmail.com", gender: "Female", age: 24, registerDate: "2024-02-05", role: "user", status: "active" },
-  { id: "3", avatar: "https://i.pravatar.cc/150?img=3", name: "Alex Rivera", email: "alex@gmail.com", gender: "Other", age: 31, registerDate: "2023-11-20", role: "user", status: "blocked" },
-  { id: "4", avatar: "https://i.pravatar.cc/150?img=9", name: "Luna Moon", email: "luna@gmail.com", gender: "Female", age: 22, registerDate: "2024-03-01", role: "user", status: "active" },
-];
-
 export default function UsersManager() {
-  const navigate = useNavigate();
-  const [users, setUsers] = useState<UserItem[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserItem[]>([]);
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      const usersCollection = collection(db, "users");
+      const usersSnapshot = await getDocs(usersCollection);
+      
+      const usersList: UserItem[] = usersSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          photoURL: data.photoURL || "",
+          displayName: data.displayName || data.username || "Unknown User",
+          email: data.email || "",
+          registeredAt: data.registeredAt || data.createdAt || new Date().toISOString(),
+          status: data.status || "active",
+        };
+      });
+      
+      setUsers(usersList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      alert("Failed to load users. Make sure you have proper permissions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      console.log("Copied ID:", id);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      // Fallback method
+      const textArea = document.createElement("textarea");
+      textArea.value = id;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const toggleUserStatus = async (user: UserItem) => {
+    const newStatus = user.status === "active" ? "blocked" : "active";
+    
+    try {
+      const userRef = doc(db, "users", user.id);
+      await updateDoc(userRef, { status: newStatus });
+      
+      setUsers(prev => prev.map(u => 
+        u.id === user.id ? { ...u, status: newStatus } : u
+      ));
+      
+      console.log(`User ${user.displayName} status changed to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      alert("Failed to update user status. Check console for details.");
+    }
+  };
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
       const searchStr = query.toLowerCase();
       return (
-        u.name.toLowerCase().includes(searchStr) || 
-        u.email.toLowerCase().includes(searchStr) ||
-        u.gender.toLowerCase().includes(searchStr)
+        u.displayName.toLowerCase().includes(searchStr) || 
+        u.email.toLowerCase().includes(searchStr)
       );
     });
   }, [users, query]);
 
-  const toggleStatus = (id: string) => {
-    setUsers(users.map(u => 
-      u.id === id ? { ...u, status: u.status === "active" ? "blocked" : "active" } : u
-    ));
-  };
-
-  const deleteUser = (id: string) => {
-    if(window.confirm("Delete this user permanently?")) {
-      setUsers(users.filter(u => u.id !== id));
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateString;
     }
   };
 
@@ -65,7 +124,7 @@ export default function UsersManager() {
             <h1 className="text-3xl font-black text-white tracking-tight">
               User <span className="text-purple-400">List</span>
             </h1>
-            <p className="text-slate-500 font-medium">Manage member accounts and registration data</p>
+            <p className="text-slate-500 font-medium">Manage registered user accounts</p>
           </div>
 
           <div className="relative group">
@@ -73,117 +132,130 @@ export default function UsersManager() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, email, gender..."
+              placeholder="Search by name or email..."
               className="pl-12 pr-6 py-4 w-full lg:w-[450px] rounded-2xl bg-slate-900/80 border border-white/5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-2xl"
             />
           </div>
         </div>
 
         <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white/5 text-slate-500 text-[10px] uppercase tracking-[0.2em] font-black">
-                  <th className="px-8 py-6">Identity</th>
-                  <th className="px-6 py-6 text-center">Gender</th>
-                  <th className="px-6 py-6 text-center">Age</th>
-                  <th className="px-6 py-6">Joined Date</th>
-                  <th className="px-6 py-6">Status</th>
-                  <th className="px-8 py-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filtered.map((u) => (
-                  <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <img src={u.avatar} className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-purple-500/50 transition-all" alt="" />
-                        <div>
-                          <div className="text-white font-bold tracking-tight">{u.name}</div>
-                          <div className="text-slate-500 text-xs font-medium">{u.email}</div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className={`p-2 rounded-xl bg-white/5 border border-white/5 ${
-                          u.gender === 'Male' ? 'text-blue-400' : 
-                          u.gender === 'Female' ? 'text-pink-400' : 'text-slate-400'
-                        }`}>
-                          {u.gender === "Male" && <FaMars />}
-                          {u.gender === "Female" && <FaVenus />}
-                          {u.gender === "Other" && <FaGenderless />}
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-tighter text-slate-400">{u.gender}</span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5 text-center">
-                      <span className="inline-block px-3 py-1 bg-slate-800 text-purple-400 rounded-lg text-xs font-black ring-1 ring-white/5">
-                        {u.age}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
-                        <FaCalendarAlt className="text-purple-500/50 text-[10px]" />
-                        {u.registerDate}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <button 
-                        onClick={() => toggleStatus(u.id)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                          u.status === "active" 
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
-                          : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
-                        }`}
-                      >
-                        {u.status}
-                      </button>
-                    </td>
-
-                    {/* Actions Column */}
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                        <ActionButton icon={<FaEye />} onClick={() => navigate(`/admin/users/${u.id}`)} />
-                        <ActionButton icon={<FaEdit />} onClick={() => navigate(`/admin/users/${u.id}/edit`)} hoverColor="hover:bg-purple-600" />
-                        <ActionButton icon={<FaTrashAlt />} onClick={() => deleteUser(u.id)} hoverColor="hover:bg-red-600" />
-                      </div>
-                    </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/5 text-slate-500 text-[10px] uppercase tracking-[0.2em] font-black">
+                    <th className="px-8 py-6">User</th>
+                    <th className="px-6 py-6">Email</th>
+                    <th className="px-6 py-6">Joined Date</th>
+                    <th className="px-6 py-6">Status</th>
+                    <th className="px-8 py-6 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filtered.map((u) => (
+                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                          {u.photoURL ? (
+                            <img 
+                              src={u.photoURL} 
+                              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-purple-500/50 transition-all" 
+                              alt={u.displayName}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 ring-2 ring-white/5 group-hover:ring-purple-500/50 transition-all flex items-center justify-center text-purple-400 font-black text-lg">
+                              {u.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-white font-bold tracking-tight">{u.displayName}</div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyId(u.id);
+                              }}
+                              className="flex items-center gap-2 text-slate-500 hover:text-purple-400 text-xs font-medium transition-colors cursor-pointer group/id"
+                              title="Click to copy full ID"
+                            >
+                              <span>ID: {u.id.substring(0, 8)}...</span>
+                              {copiedId === u.id ? (
+                                <FaCheck className="text-green-400 text-[10px]" />
+                              ) : (
+                                <FaCopy className="text-[10px] opacity-0 group-hover/id:opacity-100 transition-opacity" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
 
-          {filtered.length === 0 && (
-            <div className="py-24 text-center">
-              <div className="inline-flex p-8 bg-white/5 rounded-[2rem] mb-6 text-slate-700">
-                <FaSearch size={40} />
-              </div>
-              <h3 className="text-2xl font-black text-white uppercase italic">No Matches Found</h3>
-              <p className="text-slate-500 mt-2 font-medium">We couldn't find any users matching "{query}"</p>
-              <button onClick={() => setQuery("")} className="mt-6 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all">
-                Reset Search
-              </button>
+                      <td className="px-6 py-5">
+                        <span className="text-slate-300 text-sm font-medium">{u.email}</span>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
+                          <FaCalendarAlt className="text-purple-500/50 text-[10px]" />
+                          {formatDate(u.registeredAt)}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                          u.status === 'active' 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {u.status}
+                        </span>
+                      </td>
+
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                          <button
+                            onClick={() => toggleUserStatus(u)}
+                            className={`p-3.5 rounded-2xl transition-all border border-white/5 shadow-xl ${
+                              u.status === 'active'
+                              ? 'bg-slate-800/80 text-red-400 hover:bg-red-600 hover:text-white'
+                              : 'bg-slate-800/80 text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                            title={u.status === 'active' ? 'Block user' : 'Unblock user'}
+                          >
+                            {u.status === 'active' ? <FaBan /> : <FaCheckCircle />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {filtered.length === 0 && (
+                <div className="py-24 text-center">
+                  <div className="inline-flex p-8 bg-white/5 rounded-[2rem] mb-6 text-slate-700">
+                    <FaSearch size={40} />
+                  </div>
+                  <h3 className="text-2xl font-black text-white uppercase italic">No Users Found</h3>
+                  <p className="text-slate-500 mt-2 font-medium">
+                    {query ? `No users matching "${query}"` : "No registered users yet"}
+                  </p>
+                  {query && (
+                    <button 
+                      onClick={() => setQuery("")} 
+                      className="mt-6 px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      Reset Search
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-function ActionButton({ icon, onClick, hoverColor = "hover:bg-slate-700" }: { icon: React.ReactNode; onClick: () => void; hoverColor?: string }) {
-  return (
-    <button 
-      onClick={onClick} 
-      className={`p-3.5 bg-slate-800/80 text-slate-400 hover:text-white rounded-2xl transition-all border border-white/5 shadow-xl ${hoverColor}`}
-    >
-      {icon}
-    </button>
   );
 }
