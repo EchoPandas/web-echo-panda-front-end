@@ -40,6 +40,7 @@ import Songs from "../admin/pages/Songs";
 import Categories from "../admin/pages/Categories";
 import PlaylistsReport from "../admin/pages/PlaylistsReport";
 import AdminSettings from "../admin/pages/AdminSettings";
+import AdminLogin from "../admin/pages/AdminLogin";
 
 export interface RouteConfig {
   path: string;
@@ -215,6 +216,15 @@ export const routeConfig: RouteConfig[] = [
   label: "Admin shortcut",
   icon: null,
   component: () => <Navigate to="/admin/dashboard" replace />,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/login",
+  label: "admin login",
+  icon: null,
+  component: AdminLogin,
   group: "admin",
   showInSidebar: false,
   role: "admin",

@@ -4,6 +4,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import { routeConfig } from "./routeConfig";
 
 import AdminLayout from "../admin/AdminLayout";
+import ProtectedAdminRoute from "../admin/ProtectedAdminRoute";
 import Dashboard from "../admin/pages/Dashboard";
 import Admins from "../admin/pages/Admins";
 import Users from "../admin/pages/Users";
@@ -13,6 +14,7 @@ import Artists from "../admin/pages/Artists";
 import Favorites from "../admin/pages/Favorites";
 import PlaylistsReport from "../admin/pages/PlaylistsReport";
 import AdminSettings from "../admin/pages/AdminSettings";
+import AdminLogin from "../admin/pages/AdminLogin";
 
 // Get main routes (menu, library, playlist, general) for HomeLayout
 const mainRoutes = routeConfig.filter(
@@ -48,8 +50,18 @@ const router = createBrowserRouter([
       element: route.component ? <route.component /> : null,
     })),
   },
+  // Admin login route (no layout)
   {
-    element: <AdminLayout />,
+    path: "/admin/login",
+    element: <AdminLogin />,
+  },
+  // Admin routes with AdminLayout (Protected)
+  {
+    element: (
+      <ProtectedAdminRoute>
+        <AdminLayout />
+      </ProtectedAdminRoute>
+    ),
     children: [
       { path: "/admin", element: <Navigate to="/admin/dashboard" replace /> },
       { path: "/admin/dashboard", element: <Dashboard /> },

@@ -1,5 +1,9 @@
 import { auth, googleProvider } from "./firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { app } from "./firebaseConfig";
+
+const db = getFirestore(app);
 
 interface UserData {
   username?: string;
@@ -32,6 +36,30 @@ export async function SignInWithGoogle(): Promise<UserData> {
 
   localStorage.setItem("user", JSON.stringify(userData));
   localStorage.setItem("isAuthenticated", "true");
+
+  // Save to Firestore for admin access
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    // Only create document if it doesn't exist (first time sign in)
+    if (!userDoc.exists()) {
+      await setDoc(userDocRef, {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        registeredAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      });
+    } else {
+      // Update last login
+      await setDoc(userDocRef, {
+        lastLogin: new Date().toISOString(),
+      }, { merge: true });
+    }
+  } catch (error) {
+    console.error("Error saving user to Firestore:", error);
+  }
 
   return userData;
 }

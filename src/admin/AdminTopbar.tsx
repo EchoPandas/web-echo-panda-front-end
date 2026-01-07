@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaUser, FaSignOutAlt, FaBell, FaCog } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../routes/firebaseConfig";
 
 interface AdminTopbarProps {
   onSearch?: (query: string) => void;
@@ -40,15 +41,25 @@ export default function AdminTopbar({
   const [isSearching, setIsSearching] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Default admin data
-  const defaultAdminData = {
-    name: "Admin",
-    email: "admin@echopanda.com",
-    role: "Administrator",
-    avatar: undefined,
+  // Load admin data from localStorage or use default
+  const getAdminFromStorage = () => {
+    try {
+      const stored = localStorage.getItem("adminUser");
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error("Failed to load admin data:", error);
+    }
+    return {
+      name: "Admin",
+      email: "admin@echopanda.com",
+      role: "Administrator",
+      avatar: undefined,
+    };
   };
 
-  const admin = adminData || defaultAdminData;
+  const admin = adminData || getAdminFromStorage();
 
   // Simulate fetching notifications
   useEffect(() => {
@@ -110,9 +121,10 @@ export default function AdminTopbar({
         await onLogout();
       } else {
         // Default logout logic
-        localStorage.removeItem("authToken");
+        await auth.signOut();
         localStorage.removeItem("adminUser");
-        navigate("/login");
+        localStorage.removeItem("authToken");
+        navigate("/admin/login");
       }
     } catch (error) {
       console.error("Logout failed:", error);
