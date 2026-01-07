@@ -19,7 +19,7 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
 
   return (
     <footer className={`${bgClass} w-full border-t border-gray-700`}>
-      <div className="max-w-screen-xl mx-auto px-6 py-6 sm:py-12">
+      <div className="max-w-7xl mx-auto px-6 py-6 sm:py-12">
 
         {/* DESKTOP / TABLET VIEW */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
@@ -61,7 +61,7 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
 
           {/* Brand */}
           <div>
-            <h3 className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-500 text-xl">
+            <h3 className="font-extrabold text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-blue-500 text-xl">
               EchoPanda
             </h3>
 
