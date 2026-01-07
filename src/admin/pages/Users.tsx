@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { FaSearch, FaCalendarAlt, FaSpinner, FaCopy, FaCheck } from "react-icons/fa";
+import { FaSearch, FaCalendarAlt, FaSpinner, FaCopy, FaCheck, FaBan, FaCheckCircle } from "react-icons/fa";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, getDocs, query, where } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { app } from "../../routes/firebaseConfig";
 
 const auth = getAuth(app);
@@ -13,6 +13,7 @@ interface UserItem {
   displayName: string;
   email: string;
   registeredAt: string;
+  status: "active" | "blocked";
 }
 
 export default function UsersManager() {
@@ -40,6 +41,7 @@ export default function UsersManager() {
           displayName: data.displayName || data.username || "Unknown User",
           email: data.email || "",
           registeredAt: data.registeredAt || data.createdAt || new Date().toISOString(),
+          status: data.status || "active",
         };
       });
       
@@ -69,6 +71,24 @@ export default function UsersManager() {
       document.body.removeChild(textArea);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const toggleUserStatus = async (user: UserItem) => {
+    const newStatus = user.status === "active" ? "blocked" : "active";
+    
+    try {
+      const userRef = doc(db, "users", user.id);
+      await updateDoc(userRef, { status: newStatus });
+      
+      setUsers(prev => prev.map(u => 
+        u.id === user.id ? { ...u, status: newStatus } : u
+      ));
+      
+      console.log(`User ${user.displayName} status changed to ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      alert("Failed to update user status. Check console for details.");
     }
   };
 
@@ -131,6 +151,8 @@ export default function UsersManager() {
                     <th className="px-8 py-6">User</th>
                     <th className="px-6 py-6">Email</th>
                     <th className="px-6 py-6">Joined Date</th>
+                    <th className="px-6 py-6">Status</th>
+                    <th className="px-8 py-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -178,6 +200,32 @@ export default function UsersManager() {
                         <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
                           <FaCalendarAlt className="text-purple-500/50 text-[10px]" />
                           {formatDate(u.registeredAt)}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                          u.status === 'active' 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {u.status}
+                        </span>
+                      </td>
+
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                          <button
+                            onClick={() => toggleUserStatus(u)}
+                            className={`p-3.5 rounded-2xl transition-all border border-white/5 shadow-xl ${
+                              u.status === 'active'
+                              ? 'bg-slate-800/80 text-red-400 hover:bg-red-600 hover:text-white'
+                              : 'bg-slate-800/80 text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                            title={u.status === 'active' ? 'Block user' : 'Unblock user'}
+                          >
+                            {u.status === 'active' ? <FaBan /> : <FaCheckCircle />}
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -25,6 +25,41 @@ export async function SignInWithGoogle(): Promise<UserData> {
   const result = await signInWithPopup(auth, googleProvider);
   const user = result.user;
 
+  // Check user status in Firestore first
+  try {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    // Check if user is blocked
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      if (userData.status === "blocked") {
+        await auth.signOut();
+        throw new Error("Your account has been blocked. Please contact support.");
+      }
+      
+      // Update last login
+      await setDoc(userDocRef, {
+        lastLogin: new Date().toISOString(),
+      }, { merge: true });
+    } else {
+      // First time sign in - create user document
+      await setDoc(userDocRef, {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        registeredAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        status: "active",
+      });
+    }
+  } catch (error: any) {
+    console.error("Error checking/saving user to Firestore:", error);
+    if (error.message.includes("blocked")) {
+      throw error;
+    }
+  }
+
   // Store user data in localStorage
   const userData: UserData = {
     email: user.email || "",
@@ -36,30 +71,6 @@ export async function SignInWithGoogle(): Promise<UserData> {
 
   localStorage.setItem("user", JSON.stringify(userData));
   localStorage.setItem("isAuthenticated", "true");
-
-  // Save to Firestore for admin access
-  try {
-    const userDocRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userDocRef);
-    
-    // Only create document if it doesn't exist (first time sign in)
-    if (!userDoc.exists()) {
-      await setDoc(userDocRef, {
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        registeredAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      });
-    } else {
-      // Update last login
-      await setDoc(userDocRef, {
-        lastLogin: new Date().toISOString(),
-      }, { merge: true });
-    }
-  } catch (error) {
-    console.error("Error saving user to Firestore:", error);
-  }
 
   return userData;
 }
