@@ -7,6 +7,7 @@ import {
   FaUser, FaCompactDisc, FaTimes, FaFolder, FaMusic, FaCheck
 } from 'react-icons/fa';
 import Player from './Player';
+import Song from './Song';
 
 // --- Types & Mock Data ---
 interface SongData {
@@ -276,39 +277,27 @@ const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const [hovered, setHovered] = useState<number | null>(null);
-  const [favs, setFavs] = useState<Record<number, boolean>>({});
   const [showSidebar, setShowSidebar] = useState<boolean>(false);
-  const [contextMenu, setContextMenu] = useState<{ songId: number; x: number; y: number } | null>(null);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSelectorModal, setShowSelectorModal] = useState(false);
   const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<number | null>(null);
   
-  const contextMenuRef = useRef<HTMLDivElement>(null);
   const song: SongData = mockSongsData[id || '1'] || mockSongsData['1'];
 
-  useEffect(() => {
-    const savedFavs = localStorage.getItem('Your Favorite');
-    if (savedFavs) setFavs(JSON.parse(savedFavs));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('Your Favorite', JSON.stringify(favs));
-    window.dispatchEvent(new Event('storage'));
-  }, [favs]);
-
-  const handleHeartClick = (e: React.MouseEvent, songId: number) => {
-    e.stopPropagation();
-    setContextMenu({ songId, x: e.clientX, y: e.clientY });
+  const handlePlay = (songId: string) => {
+    setShowSidebar(true);
   };
 
-  const handleOpenPlaylistSelector = () => {
-    if (contextMenu) {
-      setSelectedSongForPlaylist(contextMenu.songId);
-      setShowSelectorModal(true);
-      setContextMenu(null);
-    }
+  const handleAddToPlaylist = (songId: string | number) => {
+    const numericId = typeof songId === 'string' ? parseInt(songId) : songId;
+    setSelectedSongForPlaylist(numericId);
+    setShowSelectorModal(true);
+  };
+
+  const handleAddToFavorite = (songId: string | number) => {
+    console.log('Add to favorite:', songId);
+    // Implement add to favorite logic
   };
 
   const handleSelectPlaylist = (playlistId: string) => {
@@ -331,19 +320,11 @@ const SongDetails: React.FC = () => {
     setSelectedSongForPlaylist(null);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
-        setContextMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
     <div className="flex flex-col h-screen bg-black text-gray-400 font-sans overflow-hidden">
-      <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+      `}</style>
       
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 flex flex-col overflow-y-auto hide-scrollbar relative">
@@ -366,50 +347,29 @@ const SongDetails: React.FC = () => {
           <div className="p-12 pt-8 pb-32">
             <div className="grid grid-cols-12 gap-4 text-xs uppercase tracking-widest text-gray-500 font-bold border-b border-white/5 pb-4">
               <div className="col-span-1 text-center">#</div>
-              <div className="col-span-5">Title</div>
-              <div className="col-span-4 hidden md:block">Album</div>
+              <div className="col-span-9">Title</div>
               <div className="col-span-2 text-right pr-4">Time</div>
             </div>
 
             <div className="space-y-1 mt-4">
               {sampleSongs.map((s) => (
-                <div key={s.id} onMouseEnter={() => setHovered(s.id)} onMouseLeave={() => setHovered(null)}
-                     onClick={() => setShowSidebar(true)}
-                     className="group grid grid-cols-12 items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer">
-                  <div className="col-span-1 flex justify-center items-center text-sm">
-                    {hovered === s.id ? <FaPlay size={12} className="text-white" /> : s.id}
-                  </div>
-                  <div className="col-span-5 flex items-center gap-4">
-                    <div className={`w-12 h-12 ${s.color} rounded-lg shrink-0`} />
-                    <div className="truncate">
-                      <div className={`truncate font-bold text-[15px] ${hovered === s.id ? "text-white" : "text-gray-200"}`}>{s.title}</div>
-                      <div className="text-xs text-gray-500">{s.artist}</div>
-                    </div>
-                  </div>
-                  <div className="col-span-4 hidden md:block text-sm text-gray-400 truncate">{s.album}</div>
-                  <div className="col-span-2 flex items-center justify-end gap-8 pr-4">
-                    <FaHeart size={16} onClick={(e) => handleHeartClick(e, s.id)}
-                             className={`cursor-pointer transition-colors ${favs[s.id] ? "text-red-500" : "text-gray-600 group-hover:text-gray-400"}`} />
-                    <div className="text-sm font-bold text-gray-400">{s.duration}</div>
-                  </div>
-                </div>
+                <Song
+                  key={s.id}
+                  id={s.id.toString()}
+                  index={s.id}
+                  title={s.title}
+                  artists={[{ id: '1', name: s.artist }]}
+                  album={{ id: '1', title: s.album || 'Album' }}
+                  duration={parseInt(s.duration?.split(':')[0] || '0') * 60 + parseInt(s.duration?.split(':')[1] || '0')}
+                  metadata={s.date}
+                  onPlay={handlePlay}
+                  onAddToPlaylist={handleAddToPlaylist}
+                  onAddToFavorite={handleAddToFavorite}
+                  hideAlbum={true}
+                />
               ))}
             </div>
           </div>
-
-          {contextMenu && (
-            <div ref={contextMenuRef} className="fixed bg-gray-800 text-white p-2 rounded-lg shadow-xl z-50 border border-gray-600 w-48"
-                 style={{ left: contextMenu.x, top: contextMenu.y }}>
-              <button onClick={() => { setFavs(p => ({...p, [contextMenu.songId]: !p[contextMenu.songId]})); setContextMenu(null); }}
-                      className="flex items-center gap-2 w-full text-left hover:bg-gray-700 px-3 py-2 rounded transition-colors text-sm font-medium">
-                <FaHeart size={14} className={favs[contextMenu.songId] ? "text-red-500" : ""} /> {favs[contextMenu.songId] ? 'Unfavorite' : 'Add to Favorite'}
-              </button>
-              <button onClick={handleOpenPlaylistSelector}
-                      className="flex items-center gap-2 w-full text-left hover:bg-gray-700 px-3 py-2 rounded transition-colors text-sm font-medium">
-                <FaListUl size={14} /> Add to Playlist
-              </button>
-            </div>
-          )}
         </main>
 
       {showSidebar && (
@@ -438,14 +398,6 @@ const SongDetails: React.FC = () => {
 
       {/* Buttons aligned to right of text */}
       <div className="flex gap-4">
-        {/* Heart Button */}
-        <button
-          onClick={() => setFavs(p => ({ ...p, [parseInt(id || '1')]: !p[parseInt(id || '1')] }))}
-          className={`transition-colors ${favs[parseInt(id || '1')] ? "text-red-500" : "text-gray-400 hover:text-white"}`}
-        >
-          <FaHeart size={20} />
-        </button>
-
         {/* Add to Playlist Button */}
         <button
           onClick={() => { setSelectedSongForPlaylist(parseInt(id || '1')); setShowSelectorModal(true); }}

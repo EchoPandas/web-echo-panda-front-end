@@ -82,6 +82,7 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
             })}
           </ul>
 
+<<<<<<< Updated upstream
           {/* Action Section (changed to Sign Out) */}
           <div className={`mt-8 ${isCollapsed ? "px-0" : "px-2"}`}>
             <button
@@ -100,6 +101,9 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
               )}
             </button>
           </div>
+=======
+         
+>>>>>>> Stashed changes
         </nav>
 
         {/* Logout Section */}

@@ -2,7 +2,11 @@ import { useState } from "react";
 import { albums } from "../../components/AlbumSampleData";
 import AlbumCard from "../../components/AlbumCard";
 
-export default function SingleSongs() {
+interface Props {
+  artistId: string;
+}
+
+export default function SingleSongs({ artistId }: Props) {
   const [showAll, setShowAll] = useState(false);
 
   const displayedSingleSongs = showAll ? albums : albums.slice(0, 5);

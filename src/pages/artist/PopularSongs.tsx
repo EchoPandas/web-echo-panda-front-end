@@ -1,32 +1,121 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../backend/supabaseClient';
+import { FaSpinner } from 'react-icons/fa';
 
-export default function PopularSongs() {
+interface Song {
+  id: string;
+  title: string;
+  duration: number;
+  created_at: string;
+  album?: {
+    id: string;
+    title: string;
+    cover_url: string;
+  };
+}
+
+interface Props {
+  artistId: string;
+}
+
+export default function PopularSongs({ artistId }: Props) {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState<{ [key: number]: boolean }>({});
+  const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
   const [showAll, setShowAll] = useState(false);
-  
-  const songs = [
-    { title: "Song Title 1", date: "Jan 15, 2023", play: "214M", time: "4:50" },
-    { title: "Song Title 2", date: "Mar 22, 2022", play: "198M", time: "4:11" },
-    { title: "Song Title 3", date: "Nov 30, 2021", play: "143M", time: "4:42" },
-    { title: "Song Title 4", date: "May 19, 2020", play: "93M", time: "5:03" },
-    { title: "Song Title 5", date: "May 20, 2019", play: "165M", time: "3:20" },
-    { title: "Song Title 6", date: "Aug 12, 2018", play: "87M", time: "3:45" },
-    { title: "Song Title 7", date: "Dec 05, 2017", play: "76M", time: "4:15" },
-    { title: "Song Title 8", date: "Feb 28, 2016", play: "54M", time: "3:58" },
-    { title: "Song Title 9", date: "Oct 15, 2015", play: "42M", time: "4:22" },
-    { title: "Song Title 10", date: "Jul 08, 2014", play: "38M", time: "3:37" },
-  ];
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchArtistSongs();
+  }, [artistId]);
+
+  const fetchArtistSongs = async () => {
+    try {
+      setLoading(true);
+      const startTime = performance.now();
+      console.log(`🔄 [PopularSongs] Fetching songs for artist ${artistId}...`);
+      
+      const { data, error } = await supabase
+        .from('song_artist')
+        .select(`
+          songs(
+            id,
+            title,
+            duration,
+            created_at,
+            albums(id, title, cover_url)
+          )
+        `)
+        .eq('artist_id', artistId)
+        .limit(10);
+
+      const fetchTime = performance.now() - startTime;
+      console.log(`✅ [PopularSongs] Songs fetched in ${fetchTime.toFixed(0)}ms`);
+      console.log(`📊 [PopularSongs] Retrieved ${data?.length || 0} songs`);
+
+      if (error) throw error;
+
+      const transformedSongs: Song[] = (data || [])
+        .map((item: any) => item.songs)
+        .filter(Boolean)
+        .map((song: any) => ({
+          id: song.id,
+          title: song.title,
+          duration: song.duration,
+          created_at: song.created_at,
+          album: song.albums
+        }));
+
+      setSongs(transformedSongs);
+    } catch (error) {
+      console.error('Error fetching artist songs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const displayedSongs = showAll ? songs : songs.slice(0, 5);
 
-  const toggleFavorite = (index: number) => {
+  const toggleFavorite = (id: string) => {
     setFavorites(prev => ({
       ...prev,
-      [index]: !prev[index]
+      [id]: !prev[id]
     }));
   };
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Popular</h2>
+        <div className="flex items-center justify-center py-12">
+          <FaSpinner className="text-purple-400 text-3xl animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
+  if (songs.length === 0) {
+    return (
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Popular</h2>
+        <div className="text-center py-12 text-zinc-500">
+          No songs available
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>
@@ -39,7 +128,6 @@ export default function PopularSongs() {
               <th className="py-2 px-2">#</th>
               <th className="py-2 px-2">Title</th>
               <th className="py-2 px-2">Release Date</th>
-              <th className="py-2 px-2">Played</th>
               <th className="py-2 px-2">Time</th>
               <th className="py-2 px-2"></th>
             </tr>
@@ -48,8 +136,8 @@ export default function PopularSongs() {
           <tbody className="text-zinc-400">
             {displayedSongs.map((song, i) => (
               <tr
-                key={i}
-                onClick={() => navigate(`/song/${i + 1}`)}
+                key={song.id}
+                onClick={() => navigate(`/song/${song.id}`)}
                 className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-all group cursor-pointer"
               >
                 <td className="py-3 px-2 text-zinc-500 group-hover:text-zinc-300">
@@ -58,17 +146,19 @@ export default function PopularSongs() {
                 <td className="py-3 px-2 font-medium text-white">
                   {song.title}
                 </td>
-                <td className="py-3 px-2">{song.date}</td>
-                <td className="py-3 px-2">{song.play}</td>
-                <td className="py-3 px-2">{song.time}</td>
+                <td className="py-3 px-2">{formatDate(song.created_at)}</td>
+                <td className="py-3 px-2">{formatDuration(song.duration)}</td>
                 <td className="py-3 px-2">
                   <button 
-                    onClick={() => toggleFavorite(i)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(song.id);
+                    }}
                     className="p-2 hover:bg-white/10 rounded-full transition-all group"
                   >
                     <svg 
                       className={`w-5 h-5 transition-all ${
-                        favorites[i] 
+                        favorites[song.id] 
                           ? 'text-red-500 fill-red-500' 
                           : 'text-zinc-400 fill-none group-hover:text-white'
                       }`}

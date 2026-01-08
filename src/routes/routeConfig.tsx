@@ -27,6 +27,7 @@ import SongDetails from "../components/SongDetail";
 import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
+import CategoryAlbums from "../pages/CategoryAlbums";
 
 // Admin 
 import { Navigate } from "react-router-dom";
@@ -41,6 +42,7 @@ import Categories from "../admin/pages/Categories";
 import Albums from "../admin/pages/Albums";
 import AdminSettings from "../admin/pages/AdminSettings";
 import AdminLogin from "../admin/pages/AdminLogin";
+import AdminCategoryAlbums from "../admin/pages/CategoryAlbumsAdmin";
 
 export interface RouteConfig {
   path: string;
@@ -83,12 +85,28 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: true,
   },
   {
+    path: "/artist/:id",
+    label: "Artists",
+    icon: FaUserFriends,
+    component: Artist,
+    group: "menu",
+    showInSidebar: false,
+  },
+  {
     path: "/artist",
     label: "Artists",
     icon: FaUserFriends,
     component: Artist,
     group: "menu",
     showInSidebar: true,
+  },
+  {
+    path: "/category/:id",
+    label: "Category Albums",
+    icon: null,
+    component: CategoryAlbums,
+    group: "menu",
+    showInSidebar: false,
   },
 
 
@@ -294,6 +312,16 @@ export const routeConfig: RouteConfig[] = [
   label: "Categories",
   icon: null,
   component: Categories,
+  layout: AdminLayout,
+  group: "admin",
+  showInSidebar: false,
+  role: "admin",
+},
+{
+  path: "/admin/CategoryAlbum/:id",
+  label: "Category Albums",
+  icon: null,
+  component: AdminCategoryAlbums,
   layout: AdminLayout,
   group: "admin",
   showInSidebar: false,
