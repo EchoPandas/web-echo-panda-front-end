@@ -8,5 +8,5 @@ export default function Album() {
       <AlbumHeader isLightMode={false} />
       <AlbumGrid />
     </div>
-  );
+  ); 
 }

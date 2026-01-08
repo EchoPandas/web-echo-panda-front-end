@@ -85,7 +85,7 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
           {/* Action Section (changed to Sign Out) */}
           <div className={`mt-8 ${isCollapsed ? "px-0" : "px-2"}`}>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               aria-label="Sign out"
               className={`flex items-center w-full rounded-2xl border-2 border-dashed transition-all group
                 ${isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
@@ -102,19 +102,36 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
           </div>
         </nav>
 
-        {/* Logout Section */}
-        <div className={`p-4 border-t ${themeClasses.border}`}>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className={`flex items-center w-full rounded-2xl transition-all group
-              ${isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
-              ${isLightMode ? "text-red-600 hover:bg-red-50" : "text-red-500 hover:bg-red-500/10"}
-            `}
-          >
-            <FaSignOutAlt className="h-6 w-6 flex-shrink-0 group-hover:-translate-x-1 transition-transform" />
-            {!isCollapsed && <span className="ml-4 text-[15px] font-bold">Log Out</span>}
-          </button>
-        </div>
+        {/* Logout Confirmation - Appears at bottom */}
+        {showLogoutConfirm && (
+          <div className={`p-4 border-t ${themeClasses.border}`}>
+            <div className={`rounded-lg p-3 ${isLightMode ? "bg-red-50" : "bg-red-500/10"}`}>
+              {!isCollapsed && (
+                <p className={`text-sm mb-3 ${isLightMode ? "text-red-900" : "text-red-300"}`}>
+                  Are you sure you want to log out?
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleLogout}
+                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition
+                    ${isLightMode ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"}
+                  `}
+                >
+                  {isCollapsed ? "Yes" : "Log Out"}
+                </button>
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition
+                    ${isLightMode ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-white/10 text-white hover:bg-white/20"}
+                  `}
+                >
+                  {isCollapsed ? "No" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Styles for scrollbar hiding */}
@@ -122,8 +139,6 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
-      
-      {/* ... Logout Modal remains the same ... */}
     </>
   );
 };

@@ -1,5 +1,6 @@
-import React from "react";
-
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "../backend/supabaseClient";
 import AppFooter from "./home/AppFooter";
 import HeroBanner from "./artist/HeroBanner";
 import PopularSongs from "./artist/PopularSongs";
@@ -7,17 +8,82 @@ import AlbumsSection from "./artist/AlbumsSection";
 import SingleSongs from "./artist/SingleSongs";
 import PlaylistSection from "./artist/PlaylistSection";
 import FansAlsoListen from "./artist/FansAlsoListen";
+import { FaSpinner } from "react-icons/fa";
+
+interface Artist {
+  id: string;
+  name: string;
+  image_url: string;
+  bio: string;
+  gender: string;
+  role: string;
+  status: boolean;
+  created_at: string;
+}
 
 const Artist: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [artist, setArtist] = useState<Artist | null>(null);
+  const [loading, setLoading] = useState(true);
   const isLightMode = false;
+
+  useEffect(() => {
+    if (id) {
+      fetchArtist(id);
+    }
+  }, [id]);
+
+  const fetchArtist = async (artistId: string) => {
+    try {
+      setLoading(true);
+      const startTime = performance.now();
+      console.log(`🔄 [Artist] Fetching artist ${artistId}...`);
+      
+      const { data, error } = await supabase
+        .from('artists')
+        .select('*')
+        .eq('id', artistId)
+        .single();
+
+      const fetchTime = performance.now() - startTime;
+      console.log(`✅ [Artist] Artist fetched in ${fetchTime.toFixed(0)}ms`);
+
+      if (error) throw error;
+      setArtist(data);
+    } catch (error) {
+      console.error('Error fetching artist:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <FaSpinner className="text-purple-400 text-5xl animate-spin" />
+      </div>
+    );
+  }
+
+  if (!artist) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 opacity-20">🎤</div>
+          <p className="text-slate-400 text-xl">Artist not found</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <HeroBanner />
+      <HeroBanner artist={artist} />
       <div className="space-y-10 p-6 text-white">
-        <PopularSongs />
-        <AlbumsSection />
-        <SingleSongs />
-        <PlaylistSection />
+        <PopularSongs artistId={artist.id} />
+        <AlbumsSection artistId={artist.id} />
+        <SingleSongs artistId={artist.id} />
+        <PlaylistSection artistId={artist.id} />
         <FansAlsoListen />
       </div>
       <AppFooter isLightMode={isLightMode} />

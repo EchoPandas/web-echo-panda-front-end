@@ -1,227 +1,212 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  FaHeart as Heart,
-  FaPlay as Play,
-  FaPlus,
-  FaUser,
-  FaCompactDisc,
-} from "react-icons/fa";
-import { getCurrentUser } from "../routes/authContext";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaSpinner, FaMusic, FaTrash } from "react-icons/fa";
+import { supabase } from "../backend/supabaseClient";
+import Song from "../components/Song";
+import { getUserFavorites, removeFromFavorites } from "../backend/favoritesService";
+import { trackSongPlay } from "../backend/playTrackingService";
 
-interface SongItem {
-  id: number;
-  title: string;
-  artist: string;
-  date: string;
-  album: string;
-  duration: string;
-  color: string;
-  userEmail: string;
+interface Artist {
+  id: string;
+  name: string;
+  image_url: string;
 }
 
-const sampleSongs: SongItem[] = Array.from({ length: 10 }, (_, i) => ({
-  id: i + 1,
-  title: `Song ${i + 1}`,
-  artist: `Artist ${i + 1}`,
-  date: "2024-01-01",
-  album: `Album ${i + 1}`,
-  duration: `${2 + (i % 4)}:${(10 + i).toString().slice(-2)}`,
-  color: "bg-gray-400",
-  userEmail: "", // Not used
-}));
+interface Album {
+  id: string;
+  title: string;
+  cover_url: string;
+}
+
+interface SongData {
+  id: string;
+  title: string;
+  duration: number;
+  album_id: string | null;
+  audio_url: string | null;
+  songCover_url: string | null;
+  created_at: string;
+  artists?: Artist[];
+  album?: Album;
+  added_at?: string;
+}
+
+
 
 const Favorites: React.FC = () => {
-  const [favorites, setFavorites] = useState<SongItem[]>([]);
+  const navigate = useNavigate();
+  const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hovered, setHovered] = useState<number | null>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    songId: number;
-    x: number;
-    y: number;
-  } | null>(null);
-
-  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const loadFavorites = () => {
-      setLoading(true);
-      const savedFavs = localStorage.getItem('Your Favorite');
-      if (savedFavs) {
-        const favRecord: Record<number, boolean> = JSON.parse(savedFavs);
-        const favIds = Object.keys(favRecord).filter(id => favRecord[parseInt(id)]);
-        const favSongs = sampleSongs.filter(song => favIds.includes(song.id.toString()));
-        setFavorites(favSongs);
-      } else {
-        setFavorites([]);
-      }
-      setLoading(false);
-    };
-    loadFavorites();
-
-    // Listen for storage updates
-    const handleStorageChange = () => {
-      loadFavorites();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    fetchFavoriteSongs();
   }, []);
 
-  const removeFavorite = (id: number) => {
-    setFavorites((prev) => prev.filter((s) => s.id !== id));
-    const savedFavs = localStorage.getItem('Your Favorite');
-    if (savedFavs) {
-      const favRecord: Record<number, boolean> = JSON.parse(savedFavs);
-      favRecord[id] = false;
-      localStorage.setItem('Your Favorite', JSON.stringify(favRecord));
-    }
-  };
+  const fetchFavoriteSongs = async () => {
+    try {
+      setLoading(true);
+      const startTime = performance.now();
+      console.log('🔄 [Favorites] Fetching favorite songs...');
 
-  const clearAll = () => {
-    setFavorites([]);
-    localStorage.removeItem('Your Favorite');
-  };
+      // Get user's favorite song IDs
+      const favoriteSongIds = await getUserFavorites();
 
-  const handleHeartClick = (e: React.MouseEvent, songId: number) => {
-    e.stopPropagation();
-    removeFavorite(songId);
-  };
-
-  const handleContextMenu = (e: React.MouseEvent, songId: number) => {
-    e.preventDefault();
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setContextMenu({
-      songId,
-      x: rect.left,
-      y: rect.bottom + 5,
-    });
-  };
-
-  const closeContextMenu = () => setContextMenu(null);
-
-  const handleMenuAction = (action: string, songId: number) => {
-    if (action === "remove") removeFavorite(songId);
-    closeContextMenu();
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        contextMenuRef.current &&
-        !contextMenuRef.current.contains(event.target as Node)
-      ) {
-        closeContextMenu();
+      if (favoriteSongIds.length === 0) {
+        setSongs([]);
+        setLoading(false);
+        return;
       }
-    };
-    if (contextMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
+
+      // Fetch full song details
+      const { data, error } = await supabase
+        .from('songs')
+        .select(`
+          id,
+          title,
+          duration,
+          album_id,
+          audio_url,
+          songCover_url,
+          created_at,
+          song_artist(
+            artists(id, name, image_url)
+          ),
+          albums(id, title, cover_url)
+        `)
+        .in('id', favoriteSongIds);
+
+      const fetchTime = performance.now() - startTime;
+      console.log(`✅ [Favorites] Songs fetched in ${fetchTime.toFixed(0)}ms`);
+      console.log(`📊 [Favorites] Retrieved ${data?.length || 0} songs`);
+
+      if (error) throw error;
+
+      const transformedSongs: SongData[] = (data || []).map((song: any) => ({
+        id: song.id,
+        title: song.title,
+        duration: song.duration,
+        album_id: song.album_id,
+        audio_url: song.audio_url,
+        songCover_url: song.songCover_url,
+        created_at: song.created_at,
+        artists: song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || [],
+        album: song.albums || null
+      }));
+
+      setSongs(transformedSongs);
+    } catch (error) {
+      console.error('Error fetching favorite songs:', error);
+    } finally {
+      setLoading(false);
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [contextMenu]);
+  };
+
+  const handlePlay = (songId: string) => {
+    trackSongPlay(songId);
+    navigate(`/song/${songId}`);
+  };
+
+  const handleAddToPlaylist = (songId: string) => {
+    console.log('Add to playlist:', songId);
+    // Implement add to playlist logic
+  };
+
+  const handleRemoveFavorite = async (songId: string) => {
+    const success = await removeFromFavorites(songId);
+    if (success) {
+      // Refresh the list
+      await fetchFavoriteSongs();
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (window.confirm('Are you sure you want to remove all favorites?')) {
+      for (const song of songs) {
+        await removeFromFavorites(song.id);
+      }
+      setSongs([]);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
+  };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            🎵 Favorite (Liked Songs)
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Favorite is a quick way to save songs you like. One click (❤️) to add
-            or remove.
-          </p>
-        </div>
-
-        <section className="max-w-7xl mx-auto p-4 md:p-8 bg-[#0f0f0f] text-white rounded-lg">
-          <header className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Liked Songs</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                {favorites.length} songs · System-managed
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#0f0f0f] text-white py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-5xl font-black text-white mb-2 tracking-tight">
+              Liked <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Songs</span>
+            </h1>
+            <p className="text-slate-400 text-lg">
+              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+            </p>
+          </div>
+          {songs.length > 0 && (
             <button
-              onClick={clearAll}
-              disabled={favorites.length === 0}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-full text-sm font-semibold"
+              onClick={handleClearAll}
+              className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/30"
             >
+              <FaTrash size={16} />
               Clear All
             </button>
-          </header>
-
-          {loading ? (
-            <div className="text-center py-16 text-gray-400">Loading favorites...</div>
-          ) : favorites.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <Heart size={48} className="mx-auto mb-4 opacity-50" />
-              <p>No favorite songs yet</p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-12 gap-4 text-xs md:text-sm uppercase text-gray-400 border-b border-gray-800 pb-2">
-                <div className="col-span-1 text-center">#</div>
-                <div className="col-span-5 md:col-span-4">Title</div>
-                <div className="hidden md:block md:col-span-3">Album</div>
-                <div className="hidden md:block md:col-span-2">Liked Date</div>
-                <div className="col-span-2 text-right">Time</div>
-              </div>
-
-              <div className="space-y-2 mt-3">
-                {favorites.map((song) => (
-                  <div
-                    key={song.id}
-                    onMouseEnter={() => setHovered(song.id)}
-                    onMouseLeave={() => setHovered(null)}
-                    onContextMenu={(e) => handleContextMenu(e, song.id)}
-                    className="grid grid-cols-12 gap-4 p-3 rounded-lg bg-gray-800/70 hover:bg-gray-700/70 cursor-pointer"
-                  >
-                    <div className="col-span-1 text-center">
-                      {hovered === song.id ? <Play size={16} /> : `#${song.id}`}
-                    </div>
-
-                    <div className="col-span-5 md:col-span-4 flex gap-3">
-                      <div className={`w-12 h-12 ${song.color} rounded-md`}></div>
-                      <div>
-                        <div className="font-semibold">{song.title}</div>
-                        <div className="text-xs text-gray-400">{song.artist}</div>
-                      </div>
-                    </div>
-
-                    <div className="hidden md:block md:col-span-3">{song.album}</div>
-                    <div className="hidden md:block md:col-span-2">{song.date}</div>
-
-                    <div className="col-span-2 flex justify-end gap-6">
-                      <button onClick={(e) => handleHeartClick(e, song.id)}>
-                        <Heart size={16} className="text-red-400 fill-red-400" />
-                      </button>
-                      <span>{song.duration}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
           )}
+        </div>
 
-          {contextMenu && (
-            <div
-              ref={contextMenuRef}
-              style={{ top: contextMenu.y, left: contextMenu.x }}
-              className="fixed bg-[#282828] rounded-md shadow-xl min-w-[200px]"
-            >
-              <button
-                onClick={() => handleMenuAction("remove", contextMenu.songId)}
-                className="w-full px-3 py-2 text-left hover:bg-gray-700"
-              >
-                Remove from Favorites
-              </button>
-              <button className="w-full px-3 py-2 text-left hover:bg-gray-700">
-                Add to Playlist
-              </button>
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <FaSpinner className="text-purple-400 text-5xl animate-spin" />
+          </div>
+        ) : songs.length === 0 ? (
+          <div className="text-center py-32">
+            <FaMusic className="text-slate-700 text-6xl mx-auto mb-4" />
+            <p className="text-slate-400 text-xl mb-2">No liked songs yet</p>
+            <p className="text-slate-500">Songs you like will appear here</p>
+          </div>
+        ) : (
+          <div className="bg-[#0f0f0f] rounded-lg">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 text-xs md:text-sm uppercase tracking-wide text-gray-400 font-medium border-b border-gray-800 pb-2 px-3">
+              <div className="col-span-1 text-center">#</div>
+              <div className="col-span-5 md:col-span-4">Title</div>
+              <div className="hidden md:block md:col-span-3">Album</div>
+              <div className="hidden md:block md:col-span-2">Added</div>
+              <div className="col-span-2 text-right">Time</div>
             </div>
-          )}
-        </section>
+
+            {/* Song List */}
+            <div className="space-y-2 mt-3">
+              {songs.map((song, index) => (
+                <Song
+                  key={song.id}
+                  id={song.id}
+                  index={index + 1}
+                  title={song.title}
+                  artists={song.artists}
+                  album={song.album}
+                  duration={song.duration}
+                  coverUrl={song.songCover_url}
+                  metadata={formatDate(song.created_at)}
+                  onPlay={handlePlay}
+                  onAddToPlaylist={handleAddToPlaylist}
+                  onAddToFavorite={handleRemoveFavorite}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

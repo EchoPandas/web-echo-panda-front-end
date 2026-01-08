@@ -1,13 +1,32 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { AlbumItem } from "./AlbumSampleData";
+
+interface Artist {
+  id: string;
+  name: string;
+  image_url: string;
+}
+
+interface Album {
+  id: string;
+  title: string;
+  cover_url: string;
+  type?: string;
+  year?: number | string;
+  songs?: number | string;
+  artists?: Artist[];
+}
 
 interface Props {
-  album: AlbumItem;
+  album: Album;
 }
 
 export default function AlbumCard({ album }: Props) {
   const navigate = useNavigate();
+
+  const artistNames = album.artists && album.artists.length > 0
+    ? album.artists.map(a => a.name).join(', ')
+    : 'Various Artists';
 
   return (
     <div
@@ -16,13 +35,21 @@ export default function AlbumCard({ album }: Props) {
       "
     >
       <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
-        <svg
-          className="w-10 h-10 text-zinc-600"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-        </svg>
+        {album.cover_url ? (
+          <img 
+            src={album.cover_url} 
+            alt={album.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <svg
+            className="w-10 h-10 text-zinc-600"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+          </svg>
+        )}
 
         <button
           className="absolute bottom-3 right-3 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 transform bg-green-500 hover:bg-green-600 shadow-green-500/25 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2 hover:scale-105 active:scale-95"
@@ -46,7 +73,7 @@ export default function AlbumCard({ album }: Props) {
             {album.title}
           </h3>
           <p className="text-sm text-zinc-400 line-clamp-1 mb-1">
-            {album.artist}
+            {artistNames}
           </p>
         </div>
         <p className="text-xs text-zinc-400 mt-auto">

@@ -56,7 +56,7 @@ export default function Albums() {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    
+     
     fetchAlbums();
     fetchArtists();
     fetchCategories();

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   FaPlus, FaSearch, FaMusic, 
   FaTrash, FaEdit, FaTimes, FaLayerGroup, FaSpinner 
@@ -14,6 +15,7 @@ interface Category {
 }
 
 export default function CategoriesManager() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -183,14 +185,34 @@ export default function CategoriesManager() {
           /* GRID */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(cat => (
-              <div key={cat.id} className="group bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition">
+              <div 
+                key={cat.id} 
+                onClick={() => navigate(`/admin/CategoryAlbum/${cat.id}`)}
+                className="group bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition cursor-pointer hover:scale-105"
+              >
                 <div className="flex justify-between mb-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <FaMusic />
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => openEditModal(cat)} className="p-2 hover:bg-white/10 rounded-lg text-blue-400"><FaEdit /></button>
-                    <button onClick={() => handleDelete(cat.id)} className="p-2 hover:bg-white/10 rounded-lg text-red-400"><FaTrash /></button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(cat);
+                      }} 
+                      className="p-2 hover:bg-white/10 rounded-lg text-blue-400"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(cat.id);
+                      }} 
+                      className="p-2 hover:bg-white/10 rounded-lg text-red-400"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
                 </div>
 

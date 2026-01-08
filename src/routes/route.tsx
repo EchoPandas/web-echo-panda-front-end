@@ -15,6 +15,7 @@ import Favorites from "../admin/pages/Favorites";
 import Albums from "../admin/pages/Albums";
 import AdminSettings from "../admin/pages/AdminSettings";
 import AdminLogin from "../admin/pages/AdminLogin";
+import AdminCategoryAlbums from "../admin/pages/CategoryAlbumsAdmin";
 
 // Get main routes (menu, library, playlist, general) for HomeLayout
 const mainRoutes = routeConfig.filter(
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
       { path: "/admin/favorites", element: <Favorites /> },
       { path: "/admin/albums", element: <Albums /> },
       { path: "/admin/settings", element: <AdminSettings /> },
+      { path: "/admin/CategoryAlbum/:id", element: <AdminCategoryAlbums /> }
 
     ],
   },

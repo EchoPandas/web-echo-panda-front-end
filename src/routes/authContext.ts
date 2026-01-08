@@ -2,6 +2,7 @@ import { auth, googleProvider } from "./firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import { app } from "./firebaseConfig";
+import { supabase } from "../backend/supabaseClient";
 
 const db = getFirestore(app);
 
@@ -53,6 +54,16 @@ export async function SignInWithGoogle(): Promise<UserData> {
         status: "active",
       });
     }
+
+    // Store Firebase UID in Supabase
+    const { error } = await supabase
+      .from('users')
+      .upsert({ uid: user.uid }, { onConflict: 'uid' });
+
+    if (error) {
+      console.error("Error storing UID in Supabase:", error);
+    }
+
   } catch (error: any) {
     console.error("Error checking/saving user to Firestore:", error);
     if (error.message.includes("blocked")) {
@@ -104,10 +115,14 @@ export function registerWithEmail(
     }
   }
 
+  // Generate a unique UID for email/password users (since they don't have Firebase UID)
+  const generatedUID = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
   // Create user data
   const userData: UserData = {
     username,
     email,
+    uid: generatedUID,
     registeredAt: new Date().toISOString(),
   };
 
@@ -115,6 +130,14 @@ export function registerWithEmail(
   localStorage.setItem("user", JSON.stringify(userData));
   localStorage.setItem("userPassword", password);
   localStorage.setItem("isAuthenticated", "true");
+
+  // Store UID in Supabase
+  supabase
+    .from('users')
+    .insert({ uid: generatedUID })
+    .then(({ error }) => {
+      if (error) console.error("Error storing UID in Supabase:", error);
+    });
 
   return { success: true, user: userData };
 }
