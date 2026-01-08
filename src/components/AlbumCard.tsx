@@ -8,9 +8,9 @@ interface Artist {
 }
 
 interface Album {
-  id: string;
+  id: string | number;
   title: string;
-  cover_url: string;
+  cover_url?: string;
   type?: string;
   year?: number | string;
   songs?: number | string;
