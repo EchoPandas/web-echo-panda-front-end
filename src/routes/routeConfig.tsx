@@ -38,7 +38,7 @@ import Favorites from "../admin/pages/Favorites";
 import Artists from "../admin/pages/Artists";
 import Songs from "../admin/pages/Songs";
 import Categories from "../admin/pages/Categories";
-import PlaylistsReport from "../admin/pages/PlaylistsReport";
+import Albums from "../admin/pages/Albums";
 import AdminSettings from "../admin/pages/AdminSettings";
 import AdminLogin from "../admin/pages/AdminLogin";
 
@@ -303,7 +303,7 @@ export const routeConfig: RouteConfig[] = [
   path: "/admin/playlists-report",
   label: "Playlists Report",
   icon: null,
-  component: PlaylistsReport,
+  component: Albums,
   layout: AdminLayout,
   group: "admin",
   showInSidebar: false,

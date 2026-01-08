@@ -1,27 +1,21 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { 
   FaPlus, FaSearch, FaMusic, 
-  FaChartBar, FaTrash, FaEdit, FaTimes, FaLayerGroup 
+  FaTrash, FaEdit, FaTimes, FaLayerGroup, FaSpinner 
 } from "react-icons/fa";
+import { supabase } from "../../backend/supabaseClient";
 
 interface Category {
   id: string;
   name: string;
-  slug: string;
-  songCount: number;
-  color: string;
   description: string;
+  created_at: string;
+  updated_at: string;
 }
 
-const INITIAL_CATEGORIES: Category[] = [
-  { id: "1", name: "Pop", slug: "pop", songCount: 1240, color: "from-pink-500 to-rose-500", description: "Mainstream popular music with catchy hooks." },
-  { id: "2", name: "EDM", slug: "edm", songCount: 850, color: "from-purple-500 to-indigo-600", description: "Electronic Dance Music for clubs and festivals." },
-  { id: "3", name: "Lo-fi", slug: "lo-fi", songCount: 420, color: "from-cyan-500 to-blue-500", description: "Chill beats for studying and relaxation." },
-  { id: "4", name: "Rock", slug: "rock", songCount: 670, color: "from-orange-500 to-red-600", description: "Classic and modern rock tracks." },
-];
-
 export default function CategoriesManager() {
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -29,9 +23,31 @@ export default function CategoriesManager() {
   // form state
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
-    color: "from-purple-500 to-pink-500",
+    description: ""
   });
+
+  // Fetch categories from Supabase
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      alert('Failed to fetch categories');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filtered categories
   const filtered = useMemo(() => {
@@ -40,9 +56,20 @@ export default function CategoriesManager() {
     );
   }, [categories, search]);
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this category? This might affect associated songs.")) {
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this category? This might affect associated albums.")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       setCategories(categories.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Failed to delete category');
     }
   };
 
@@ -50,8 +77,7 @@ export default function CategoriesManager() {
     setEditingCat(null);
     setFormData({
       name: "",
-      description: "",
-      color: "from-purple-500 to-pink-500",
+      description: ""
     });
     setShowModal(true);
   };
@@ -60,43 +86,57 @@ export default function CategoriesManager() {
     setEditingCat(cat);
     setFormData({
       name: cat.name,
-      description: cat.description,
-      color: cat.color,
+      description: cat.description
     });
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) return;
 
-    if (editingCat) {
-      // update
-      setCategories(categories.map(c =>
-        c.id === editingCat.id
-          ? {
-              ...c,
-              name: formData.name,
-              description: formData.description,
-              color: formData.color,
-              slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-            }
-          : c
-      ));
-    } else {
-      // create
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        name: formData.name,
-        description: formData.description,
-        slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-        songCount: 0,
-        color: formData.color,
-      };
+    try {
+      if (editingCat) {
+        // update
+        const { error } = await supabase
+          .from('categories')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingCat.id);
 
-      setCategories([newCategory, ...categories]);
+        if (error) throw error;
+        
+        setCategories(categories.map(c =>
+          c.id === editingCat.id
+            ? {
+                ...c,
+                name: formData.name,
+                description: formData.description,
+                updated_at: new Date().toISOString()
+              }
+            : c
+        ));
+      } else {
+        // create
+        const { data, error } = await supabase
+          .from('categories')
+          .insert([{
+            name: formData.name,
+            description: formData.description
+          }])
+          .select();
+
+        if (error) throw error;
+        if (data) setCategories([data[0], ...categories]);
+      }
+
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error saving category:', error);
+      alert('Failed to save category');
     }
-
-    setShowModal(false);
   };
 
   return (
@@ -134,33 +174,45 @@ export default function CategoriesManager() {
           />
         </div>
 
-        {/* GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(cat => (
-            <div key={cat.id} className="group bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition">
-              <div className="flex justify-between mb-4">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center`}>
-                  <FaMusic />
+        {/* LOADING */}
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+          </div>
+        ) : (
+          /* GRID */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(cat => (
+              <div key={cat.id} className="group bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition">
+                <div className="flex justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <FaMusic />
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100">
+                    <button onClick={() => openEditModal(cat)} className="p-2 hover:bg-white/10 rounded-lg text-blue-400"><FaEdit /></button>
+                    <button onClick={() => handleDelete(cat.id)} className="p-2 hover:bg-white/10 rounded-lg text-red-400"><FaTrash /></button>
+                  </div>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100">
-                  <button onClick={() => openEditModal(cat)}><FaEdit /></button>
-                  <button onClick={() => handleDelete(cat.id)}><FaTrash /></button>
+
+                <h3 className="text-xl font-bold">{cat.name}</h3>
+                <p className="text-sm text-slate-400 mb-4">{cat.description || 'No description'}</p>
+
+                <div className="flex justify-between text-sm text-slate-300 border-t border-white/5 pt-4">
+                  <span className="text-xs text-slate-500">
+                    Created: {new Date(cat.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
-
-              <h3 className="text-xl font-bold">{cat.name}</h3>
-              <p className="text-sm text-slate-400 mb-4">{cat.description}</p>
-
-              <div className="flex justify-between text-sm text-slate-300 border-t border-white/5 pt-4">
-                <span className="flex items-center gap-2">
-                  <FaChartBar className="text-purple-400" />
-                  {cat.songCount} Tracks
-                </span>
-                <span className="text-xs text-slate-500">/{cat.slug}</span>
+            ))}
+            
+            {filtered.length === 0 && (
+              <div className="col-span-full text-center py-20">
+                <div className="text-6xl mb-4 opacity-20">🎵</div>
+                <p className="text-slate-400 text-lg">No categories found</p>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* MODAL */}
