@@ -56,41 +56,46 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
           )}
 
           <ul className="space-y-2">
-            {sidebarLinks.map((link) => (
-              <li key={link.path}>
-                <NavLink
-                  to={link.path}
-                  title={isCollapsed ? link.label : ""}
-                  className={({ isActive }) => `
-                    flex items-center rounded-2xl transition-all duration-200 group
-                    ${/* BIGGER PADDING HERE */ isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
-                    ${isActive 
-                      ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
-                      : `text-gray-400 ${themeClasses.hover} hover:text-white`
-                    }
-                  `}
-                >
-                  {/* BIGGER ICONS */}
-                  <link.icon className={`h-6 w-6 flex-shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? "" : "mr-4"}`} />
-                  {!isCollapsed && <span className="font-bold text-[15px] truncate tracking-wide">{link.label}</span>}
-                </NavLink>
-              </li>
-            ))}
+            {sidebarLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <li key={link.path}>
+                  <NavLink
+                    to={link.path}
+                    title={isCollapsed ? link.label : ""}
+                    onClick={() => { if (onToggleCollapse) onToggleCollapse(false); }}
+                    className={({ isActive }) => `
+                      flex items-center rounded-2xl transition-all duration-200 group
+                      ${/* BIGGER PADDING HERE */ isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
+                      ${isActive 
+                        ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                        : `text-gray-400 ${themeClasses.hover} hover:text-white`
+                      }
+                    `}
+                  >
+                    {/* BIGGER ICONS */}
+                    {Icon ? <Icon className={`h-6 w-6 flex-shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? "" : "mr-4"}`} /> : null}
+                    {!isCollapsed && <span className="font-bold text-[15px] truncate tracking-wide">{link.label}</span>}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
 
-          {/* Action Section */}
+          {/* Action Section (changed to Sign Out) */}
           <div className={`mt-8 ${isCollapsed ? "px-0" : "px-2"}`}>
             <button
-              onClick={() => alert("New Playlist")}
+              onClick={handleLogout}
+              aria-label="Sign out"
               className={`flex items-center w-full rounded-2xl border-2 border-dashed transition-all group
                 ${isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
-                ${isLightMode ? "border-gray-200 hover:border-blue-500" : "border-white/10 hover:border-blue-500"}
+                ${isLightMode ? "border-gray-200 hover:border-red-500" : "border-white/10 hover:border-red-500"}
               `}
             >
-              <FaPlus className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              <FaSignOutAlt className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
               {!isCollapsed && (
-                <span className="ml-4 text-[15px] font-bold text-gray-400 group-hover:text-blue-500">
-                  New Playlist
+                <span className="ml-4 text-[15px] font-bold text-gray-400 group-hover:text-red-500">
+                  Sign Out
                 </span>
               )}
             </button>

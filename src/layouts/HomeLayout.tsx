@@ -5,20 +5,19 @@ import  NavBar  from '../pages/NavBar';
 
 const HomeLayout: React.FC = () => {
   const [isLightMode, setIsLightMode] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); 
+  // Start collapsed by default on first run
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
+  // Keep the sidebar collapsed on small screens, but do not auto-expand on larger screens
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
-        setIsSidebarCollapsed(true); 
-      } else {
-        setIsSidebarCollapsed(false); 
+        setIsSidebarCollapsed(true);
       }
     };
 
     handleResize();
 
-    //-------------------------------------------
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
