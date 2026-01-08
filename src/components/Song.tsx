@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMusic, FaHeart, FaPlay, FaPlus } from "react-icons/fa";
+import { isSongFavorite, toggleFavorite } from "../backend/favoritesService";
 
 interface Artist {
   id: string;
@@ -52,6 +53,16 @@ const Song: React.FC<SongProps> = ({
   } | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
+  // Check favorite status on mount
+  useEffect(() => {
+    checkFavoriteStatus();
+  }, [id]);
+
+  const checkFavoriteStatus = async () => {
+    const isFav = await isSongFavorite(id);
+    setIsFavorite(isFav);
+  };
+
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -71,10 +82,13 @@ const Song: React.FC<SongProps> = ({
     setContextMenu(null);
   };
 
-  const handleAddToFavorite = () => {
-    setIsFavorite(!isFavorite);
-    if (onAddToFavorite) {
-      onAddToFavorite(id);
+  const handleAddToFavorite = async () => {
+    const success = await toggleFavorite(id);
+    if (success) {
+      setIsFavorite(!isFavorite);
+      if (onAddToFavorite) {
+        onAddToFavorite(id);
+      }
     }
     closeContextMenu();
   };
@@ -90,6 +104,11 @@ const Song: React.FC<SongProps> = ({
     if (onPlay) {
       onPlay(id);
     }
+  };
+
+  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
+    e.stopPropagation(); // Prevent triggering the row click
+    navigate(`/artist/${artistId}`);
   };
 
   // Click outside handler
@@ -162,7 +181,17 @@ const Song: React.FC<SongProps> = ({
             </div>
             <div className="text-xs text-gray-400 truncate">
               {artists && artists.length > 0
-                ? artists.map((a) => a.name).join(", ")
+                ? artists.map((artist, idx) => (
+                    <React.Fragment key={artist.id}>
+                      {idx > 0 && ", "}
+                      <span
+                        onClick={(e) => handleArtistClick(e, artist.id)}
+                        className="hover:underline hover:text-white cursor-pointer transition-colors"
+                      >
+                        {artist.name}
+                      </span>
+                    </React.Fragment>
+                  ))
                 : "Unknown Artist"}
             </div>
           </div>
