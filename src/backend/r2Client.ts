@@ -1,17 +1,14 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 // Cloudflare R2 Configuration
-// Get these from your Cloudflare Dashboard > R2 > Manage R2 API Tokens
-const R2_ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID || '6d32f697d11342632942848ecc14ff12';
-const R2_ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || 'f30f560612e32635c5c67aca151bfc89';
-const R2_SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || '0cc5b06d11bf1c23250ea2f4c7834f60926e6da18e8518724b220b5106c913c5';
-const R2_BUCKET_NAME = import.meta.env.VITE_R2_BUCKET_NAME || 'echo-panda';
+const R2_ACCOUNT_ID = '6d32f697d11342632942848ecc14ff12';
+const R2_ACCESS_KEY_ID = 'f30f560612e32635c5c67aca151bfc89';
+const R2_SECRET_ACCESS_KEY = '0cc5b06d11bf1c23250ea2f4c7834f60926e6da18e8518724b220b5106c913c5';
+const R2_BUCKET_NAME = 'echo-panda';
+const R2_PUBLIC_URL = 'https://pub-381e81e2f32c46c0a03f33b821638811.r2.dev';
 
 // R2 endpoint format: https://<account-id>.r2.cloudflarestorage.com
 const R2_ENDPOINT = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-
-// Optional: Custom domain if you've set up a public bucket with a custom domain
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || '';
 
 // Initialize S3 Client for R2
 export const r2Client = new S3Client({
@@ -55,13 +52,7 @@ export const uploadToR2 = async (
     );
 
     // Return the public URL
-    // If you have a custom domain, use it; otherwise use R2's public URL format
-    if (R2_PUBLIC_URL) {
-      return `${R2_PUBLIC_URL}/${key}`;
-    }
-    
-    // Default R2 public URL (requires public bucket)
-    return `https://pub-${R2_ACCOUNT_ID}.r2.dev/${key}`;
+    return `${R2_PUBLIC_URL}/${key}`;
   } catch (error) {
     console.error('Error uploading to R2:', error);
     throw error;
