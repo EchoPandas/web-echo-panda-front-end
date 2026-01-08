@@ -6,6 +6,7 @@ import Song from "../components/Song";
 import AlbumCard from "../components/AlbumCard";
 import { getMostPlayedSongs, trackSongPlay } from "../backend/playTrackingService";
 import { getUserPlaylists, createPlaylist, addSongToPlaylist, isSongInPlaylist, type Playlist } from "../backend/playlistsService";
+import { useAudioPlayer } from "../contexts/AudioPlayerContext";
 
 interface Artist {
   id: string;
@@ -34,6 +35,7 @@ interface SongData {
 
 const MostPlayed: React.FC = () => {
   const navigate = useNavigate();
+  const { playSong } = useAudioPlayer();
   const [songs, setSongs] = useState<SongData[]>([]);
   const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +125,21 @@ const MostPlayed: React.FC = () => {
   const handlePlay = (songId: string) => {
     // Track the play
     trackSongPlay(songId);
-    navigate(`/song/${songId}`);
+    
+    // Find the song data
+    const song = songs.find(s => s.id === songId);
+    if (song && song.audio_url) {
+      playSong({
+        id: song.id,
+        title: song.title,
+        artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+        coverUrl: song.songCover_url || song.album?.cover_url || '',
+        audioUrl: song.audio_url,
+        duration: song.duration
+      });
+    } else {
+      console.error('No audio URL available for this song');
+    }
   };
 
   const handleAddToPlaylist = (songId: string) => {

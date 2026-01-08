@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import SideBar from "../pages/SideBar";
 import  NavBar  from '../pages/NavBar';
+import Player from '../components/Player';
 
 const HomeLayout: React.FC = () => {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -44,6 +45,9 @@ const HomeLayout: React.FC = () => {
 
         
       </div>
+      
+      {/* Global Player at the bottom */}
+      <Player />
     </div>
   );
 };

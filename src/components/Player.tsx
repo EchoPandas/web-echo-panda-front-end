@@ -1,28 +1,31 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { 
   FaPlay, FaPause, FaStepBackward, FaStepForward, 
   FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute
 } from 'react-icons/fa';
+import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 
-interface PlayerProps {
-  song?: {
-    title: string;
-    artist: string;
-    coverUrl: string;
-  };
-}
+const Player: React.FC = () => {
+  const {
+    currentSong,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    isMuted,
+    isShuffled,
+    isRepeated,
+    togglePlayPause,
+    seekTo,
+    setVolume: setPlayerVolume,
+    toggleMute,
+    toggleShuffle,
+    toggleRepeat,
+    playNext,
+    playPrevious,
+  } = useAudioPlayer();
 
-const Player: React.FC<PlayerProps> = ({ song }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [isRepeated, setIsRepeated] = useState(false);
-  const [currentTime, setCurrentTime] = useState(316); 
-  const [duration] = useState(341);
-  const [volume, setVolume] = useState(0.5);
-  const [isMuted, setIsMuted] = useState(false);
-  const [previousVolume, setPreviousVolume] = useState(0.5);
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
-  
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
 
@@ -44,32 +47,30 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingProgress]);
+  }, [isDraggingProgress, duration]);
 
-  const mockSong = song || {
-    title: 'Bohemian Rhapsody',
-    artist: 'Queen',
-    coverUrl: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=2000'
-  };
+  // Don't render if there's no song playing
+  if (!currentSong) {
+    console.log('🎵 Player: Not rendering - no currentSong');
+    return null;
+  }
+
+  console.log('🎵 Player: Rendering with song:', currentSong);
 
   const formatTime = (seconds: number) => {
+    if (!isFinite(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = () => setIsPlaying(!isPlaying);
-  const handleShuffle = () => setIsShuffled(!isShuffled);
-  const handleRepeat = () => setIsRepeated(!isRepeated);
-
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (progressRef.current) {
+    if (progressRef.current && duration > 0) {
       const rect = progressRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const percentage = Math.max(0, Math.min(1, x / rect.width));
       const newTime = percentage * duration;
-      setCurrentTime(newTime);
-      // In a real app, you would set the audio seek here
+      seekTo(newTime);
     }
   };
 
@@ -79,12 +80,12 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
   };
 
   const handleProgressMouseMove = (e: MouseEvent) => {
-    if (isDraggingProgress && progressRef.current) {
+    if (isDraggingProgress && progressRef.current && duration > 0) {
       const rect = progressRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const percentage = Math.max(0, Math.min(1, x / rect.width));
       const newTime = percentage * duration;
-      setCurrentTime(newTime);
+      seekTo(newTime);
     }
   };
 
@@ -97,24 +98,11 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
       const rect = volumeRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const newVolume = Math.max(0, Math.min(1, x / rect.width));
-      setVolume(newVolume);
-      setPreviousVolume(newVolume);
-      setIsMuted(false);
+      setPlayerVolume(newVolume);
     }
   };
 
-  const handleVolumeIconClick = () => {
-    if (isMuted) {
-      setVolume(previousVolume);
-      setIsMuted(false);
-    } else {
-      setPreviousVolume(volume);
-      setVolume(0);
-      setIsMuted(true);
-    }
-  };
-
-  const progressPercentage = (currentTime / duration) * 100;
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const getVolumeIcon = () => {
     if (isMuted || volume === 0) return <FaVolumeMute size={16} />;
@@ -128,14 +116,14 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
       {/* LEFT: Song Info (flex-1) */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-10 h-10 md:w-14 md:h-14 rounded overflow-hidden flex-shrink-0 shadow-md">
-          <img src={mockSong.coverUrl} alt={mockSong.title} className="w-full h-full object-cover" />
+          <img src={currentSong.coverUrl} alt={currentSong.title} className="w-full h-full object-cover" />
         </div>
         <div className="min-w-0 pointer-events-auto">
           <h4 className="text-white text-[13px] md:text-sm font-semibold truncate hover:underline cursor-pointer">
-            {mockSong.title}
+            {currentSong.title}
           </h4>
           <p className="text-[11px] md:text-xs text-gray-400 truncate hover:text-white cursor-pointer">
-            {mockSong.artist}
+            {currentSong.artist}
           </p>
         </div>
       </div>
@@ -147,20 +135,28 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
           <FaRandom 
             size={14} 
             className={`hidden sm:block cursor-pointer transition-colors pointer-events-auto ${isShuffled ? 'text-blue-500' : 'hover:text-white'}`}
-            onClick={handleShuffle}
+            onClick={toggleShuffle}
           />
-          <FaStepBackward size={18} className="hover:text-white cursor-pointer transition-colors pointer-events-auto" />
+          <FaStepBackward 
+            size={18} 
+            className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
+            onClick={playPrevious}
+          />
           <button 
-            onClick={handlePlayPause}
+            onClick={togglePlayPause}
             className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 active:scale-95 transition-all pointer-events-auto"
           >
             {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} className="ml-0.5" />}
           </button>
-          <FaStepForward size={18} className="hover:text-white cursor-pointer transition-colors pointer-events-auto" />
+          <FaStepForward 
+            size={18} 
+            className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
+            onClick={playNext}
+          />
           <FaRedo 
             size={14} 
             className={`hidden sm:block cursor-pointer transition-colors pointer-events-auto ${isRepeated ? 'text-blue-500' : 'hover:text-white'}`}
-            onClick={handleRepeat}
+            onClick={toggleRepeat}
           />
         </div>
 
@@ -189,7 +185,7 @@ const Player: React.FC<PlayerProps> = ({ song }) => {
       <div className="flex-1 flex items-center justify-end gap-3 md:gap-4 text-gray-400">
         
         <div className="flex items-center gap-2 group">
-          <div className="cursor-pointer hover:text-white pointer-events-auto" onClick={handleVolumeIconClick}>
+          <div className="cursor-pointer hover:text-white pointer-events-auto" onClick={toggleMute}>
             {getVolumeIcon()}
           </div>
           <div 

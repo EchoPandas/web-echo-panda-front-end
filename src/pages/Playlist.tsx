@@ -15,6 +15,7 @@ import {
   type Playlist 
 } from '../backend/playlistsService';
 import { trackSongPlay } from '../backend/playTrackingService';
+import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 
 interface Artist {
   id: string;
@@ -165,6 +166,7 @@ const PlaylistSelectorModal: React.FC<{
 // --- Playlist Page ---
 const PlaylistPage: React.FC = () => {
   const navigate = useNavigate();
+  const { playSong } = useAudioPlayer();
   const [songs, setSongs] = useState<SongData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -272,7 +274,21 @@ const PlaylistPage: React.FC = () => {
   const handlePlay = async (songId: string) => {
     try {
       await trackSongPlay(songId);
-      console.log('Playing song:', songId);
+      
+      // Find the song data
+      const song = songs.find(s => s.id === songId);
+      if (song && song.audio_url) {
+        playSong({
+          id: song.id,
+          title: song.title,
+          artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+          coverUrl: song.songCover_url || song.album?.cover_url || '',
+          audioUrl: song.audio_url,
+          duration: song.duration
+        });
+      } else {
+        console.error('No audio URL available for this song');
+      }
     } catch (error) {
       console.error('Error tracking play:', error);
     }
