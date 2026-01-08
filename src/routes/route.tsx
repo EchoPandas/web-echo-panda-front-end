@@ -12,7 +12,7 @@ import Songs from "../admin/pages/Songs";
 import Categories from "../admin/pages/Categories";
 import Artists from "../admin/pages/Artists";
 import Favorites from "../admin/pages/Favorites";
-import PlaylistsReport from "../admin/pages/PlaylistsReport";
+import Albums from "../admin/pages/Albums";
 import AdminSettings from "../admin/pages/AdminSettings";
 import AdminLogin from "../admin/pages/AdminLogin";
 
@@ -71,7 +71,7 @@ const router = createBrowserRouter([
       { path: "/admin/categories", element: <Categories /> },
       { path: "/admin/artists", element: <Artists /> },
       { path: "/admin/favorites", element: <Favorites /> },
-      { path: "/admin/playlists-report", element: <PlaylistsReport /> },
+      { path: "/admin/albums", element: <Albums /> },
       { path: "/admin/settings", element: <AdminSettings /> },
 
     ],

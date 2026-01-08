@@ -25,7 +25,7 @@ const menus: MenuItem[] = [
   { name: "Artists", path: "/admin/artists", icon: <FaMusic /> },
   { name: "Songs", path: "/admin/songs", icon: <FaCompactDisc /> },
   { name: "Categories", path: "/admin/categories", icon: <FaTags /> },
-  { name: "Playlist Report", path: "/admin/playlists-report", icon: <FaListUl /> },
+  { name: "Albums", path: "/admin/albums", icon: <FaListUl /> },
   { name: "Settings", path: "/admin/settings", icon: <FaCog /> },
 ];
 
