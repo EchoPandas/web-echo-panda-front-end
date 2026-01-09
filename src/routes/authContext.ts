@@ -143,7 +143,7 @@ export function registerWithEmail(
 }
 //=====================================================================================
 // Email/Password Login
-export function signInWithEmail(email: string, password: string): AuthResult {
+export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
   const storedUser = localStorage.getItem("user");
   const storedPassword = localStorage.getItem("userPassword");
 
@@ -155,6 +155,17 @@ export function signInWithEmail(email: string, password: string): AuthResult {
 
   if (userData.email !== email || storedPassword !== password) {
     return { success: false, error: "Invalid email or password" };
+  }
+
+  // Store/update UID in Supabase on every login (same as Google sign-in)
+  if (userData.uid) {
+    const { error } = await supabase
+      .from('users')
+      .upsert({ uid: userData.uid }, { onConflict: 'uid' });
+
+    if (error) {
+      console.error("Error storing UID in Supabase:", error);
+    }
   }
 
   localStorage.setItem("isAuthenticated", "true");

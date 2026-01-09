@@ -6,11 +6,11 @@ import {
   FaMicrophone, FaChevronDown, FaChevronLeft, FaPlus,
   FaUser, FaCompactDisc, FaTimes, FaFolder, FaMusic, FaCheck, FaSpinner
 } from 'react-icons/fa';
-import Player from './Player';
 import Song from './Song';
 import { supabase } from '../backend/supabaseClient';
 import { getUserPlaylists, createPlaylist, addSongToPlaylist, isSongInPlaylist, type Playlist } from '../backend/playlistsService';
 import { trackSongPlay } from '../backend/playTrackingService';
+import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 
 // --- Types ---
 interface Artist {
@@ -232,6 +232,7 @@ const PlaylistSelectorModal: React.FC<PlaylistSelectorModalProps> = ({
 const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { playSong } = useAudioPlayer();
   
   const [showSidebar, setShowSidebar] = useState<boolean>(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -350,8 +351,33 @@ const SongDetails: React.FC = () => {
   };
 
   const handlePlay = (songId: string) => {
+    console.log('🎵 handlePlay called with songId:', songId);
     trackSongPlay(songId);
-    setShowSidebar(true);
+    
+    // Find the song data to play
+    const songToPlay = albumSongs.find(s => s.id === songId) || currentSong;
+    console.log('🎵 Song to play:', songToPlay);
+    console.log('🎵 Has audio_url?', !!songToPlay?.audio_url);
+    console.log('🎵 audio_url value:', songToPlay?.audio_url);
+    
+    if (songToPlay && songToPlay.audio_url) {
+      const songData = {
+        id: songToPlay.id,
+        title: songToPlay.title,
+        artist: songToPlay.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+        coverUrl: songToPlay.songCover_url || currentSong?.album?.cover_url || '',
+        audioUrl: songToPlay.audio_url,
+        duration: songToPlay.duration
+      };
+      console.log('🎵 Calling playSong with:', songData);
+      playSong(songData);
+      setShowSidebar(true); // Show the sidebar with lyrics
+      console.log('✅ playSong called successfully');
+    } else {
+      console.error('❌ No audio URL available for this song');
+      console.error('songToPlay:', songToPlay);
+      alert('This song does not have an audio file. Please upload an audio file for this song.');
+    }
   };
 
   const handleAddToPlaylist = (songId: string | number) => {
@@ -538,8 +564,6 @@ const SongDetails: React.FC = () => {
         onSelectPlaylist={handleSelectPlaylist}
         onCreateNew={() => { setShowSelectorModal(false); setShowCreateModal(true); }} 
       />
-
-      <Player song={{ title: currentSong.title, artist: artistNames, coverUrl: albumCover }} />
     </div>
   );
 };
