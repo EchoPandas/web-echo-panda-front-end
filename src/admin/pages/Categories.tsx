@@ -5,6 +5,7 @@ import {
   FaTrash, FaEdit, FaTimes, FaLayerGroup, FaSpinner 
 } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
+import { useDataCache } from "../../contexts/DataCacheContext";
 
 interface Category {
   id: string;
@@ -16,6 +17,7 @@ interface Category {
 
 export default function CategoriesManager() {
   const navigate = useNavigate();
+  const { getCachedData, clearCache } = useDataCache();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -36,13 +38,24 @@ export default function CategoriesManager() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setCategories(data || []);
+      const data = await getCachedData('admin_categories', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Admin] Fetching categories...');
+
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Admin] Categories fetched in ${fetchTime.toFixed(0)}ms`);
+
+        if (error) throw error;
+        return data || [];
+      });
+
+      setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
       alert('Failed to fetch categories');
@@ -68,6 +81,7 @@ export default function CategoriesManager() {
         .eq('id', id);
 
       if (error) throw error;
+      clearCache('admin_categories');
       setCategories(categories.filter(c => c.id !== id));
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -134,6 +148,7 @@ export default function CategoriesManager() {
         if (data) setCategories([data[0], ...categories]);
       }
 
+      clearCache('admin_categories');
       setShowModal(false);
     } catch (error) {
       console.error('Error saving category:', error);

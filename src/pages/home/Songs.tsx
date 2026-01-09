@@ -25,6 +25,7 @@ interface Props {
   isLightMode?: boolean;
   limit?: number;
   offset?: number; // for deduping across sections
+  songs?: any[]; // Pre-fetched songs/albums to display instead of fetching
 }
 
 const SongSection: React.FC<Props> = ({
@@ -32,6 +33,7 @@ const SongSection: React.FC<Props> = ({
   isLightMode = true,
   limit = 10,
   offset = 0,
+  songs,
 }) => {
   const bgClass = "bg-black";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
@@ -43,9 +45,14 @@ const SongSection: React.FC<Props> = ({
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAlbums();
+    if (!songs) {
+      fetchAlbums();
+    } else {
+      setAlbums(songs);
+      setLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [limit, offset]);
+  }, [limit, offset, songs]);
 
   const fetchAlbums = async () => {
     try {

@@ -7,13 +7,25 @@ import ContactUs from "./ContactUs";
 
 import InterestOnboardingModal from "../components/InterestOnboardingModal";
 import { getRecommendationsForInterests } from "../backend/recommendationService";
+import { supabase } from "../backend/supabaseClient";
+import { useDataCache } from "../contexts/DataCacheContext";
 import type { Song } from "../data/searchData";
+
+interface Tag {
+  id: string;
+  name: string;
+  description: string;
+  display_order: number;
+  albums: any[];
+}
 
 const Home: React.FC = () => {
   const isLightMode = false;
+  const { getCachedData } = useDataCache();
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [recommendedSongs, setRecommendedSongs] = useState<Song[] | undefined>(undefined);
+  const [tags, setTags] = useState<Tag[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('onboarding:interests');
@@ -27,7 +39,66 @@ const Home: React.FC = () => {
         // ignore
       }
     }
+
+    // Fetch dynamic tags
+    fetchTags();
   }, []);
+
+  const fetchTags = async () => {
+    try {
+      const data = await getCachedData('home_tags', async () => {
+        console.log('🔄 [Home] Fetching active tags...');
+
+        // Fetch active tags with their albums
+        const { data: tagsData, error } = await supabase
+          .from('tags')
+          .select(`
+            id,
+            name,
+            description,
+            display_order,
+            album_tag (
+              albums (
+                id,
+                title,
+                cover_url,
+                type,
+                release_date,
+                album_artist (
+                  artists (id, name, image_url)
+                )
+              )
+            )
+          `)
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+
+        const transformedTags = (tagsData || []).map((tag: any) => ({
+          id: tag.id,
+          name: tag.name,
+          description: tag.description,
+          display_order: tag.display_order,
+          albums: tag.album_tag?.map((at: any) => ({
+            id: at.albums.id,
+            title: at.albums.title,
+            cover_url: at.albums.cover_url,
+            type: at.albums.type,
+            release_date: at.albums.release_date,
+            artists: at.albums.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || []
+          })) || []
+        }));
+
+        console.log(`✅ [Home] ${transformedTags.length} active tags loaded`);
+        return transformedTags;
+      });
+
+      setTags(data);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
 
   const handleOnboardingSave = (interests: string[]) => {
     localStorage.setItem('onboarding:interests', JSON.stringify(interests));
@@ -44,15 +115,21 @@ const Home: React.FC = () => {
         <SongSection title="Recommended for you" isLightMode={isLightMode} songs={recommendedSongs} />
       )}
 
-      {/* Songs Sections */}
+      {/* Trending Songs */}
       <SongSection title="Trending Songs" isLightMode={isLightMode} limit={6} offset={0} />
+      
+      {/* Popular Artists */}
       <ArtistSection title="Popular Artists" isLightMode={isLightMode} layout="grid" />
-      <SongSection title="K-POP Songs" isLightMode={isLightMode} limit={1} offset={6} />
-      <SongSection title="Chinese Songs" isLightMode={isLightMode} limit={1} offset={7} />
-      <SongSection title="Indonesian Songs" isLightMode={isLightMode} limit={1} offset={8} />
-      <SongSection title="Khmer Songs" isLightMode={isLightMode} limit={1} offset={9} />
-      <SongSection title="Top Albums" isLightMode={isLightMode} limit={5} offset={10} />
-      <SongSection title="Mood Playlists" isLightMode={isLightMode} limit={5} offset={15} />
+
+      {/* Dynamic Tag Sections */}
+      {tags.map((tag) => (
+        <SongSection 
+          key={tag.id}
+          title={tag.name} 
+          isLightMode={isLightMode} 
+          songs={tag.albums}
+        />
+      ))}
 
       {/* Contact Us */}
       <div className="mb-12">

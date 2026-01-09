@@ -1,54 +1,193 @@
-import React, { useMemo, useState } from "react";
-import { FaMusic, FaMicrophone, FaFire, FaCalendarAlt } from "react-icons/fa";
+import React, { useMemo, useState, useEffect } from "react";
+import { FaMusic, FaMicrophone, FaFire, FaCalendarAlt, FaSpinner } from "react-icons/fa";
+import { supabase } from "../../backend/supabaseClient";
+import { useDataCache } from "../../contexts/DataCacheContext";
 
 interface Song {
+  id: string;
   rank: number;
   title: string;
   artist: string;
   favorites: number;
   plays: number;
+  cover_url?: string;
 }
 
 interface Artist {
+  id: string;
   rank: number;
   name: string;
   favorites: number;
   followers: number;
+  image_url?: string;
 }
 
-const MOCK_SONGS: Song[] = [
-  { rank: 1, title: "Midnight Dreams", artist: "Luna Beats", favorites: 2450, plays: 8900 },
-  { rank: 2, title: "Electric Soul", artist: "Synthwave Band", favorites: 2180, plays: 7600 },
-  { rank: 3, title: "Ocean Waves", artist: "Chill Vibes", favorites: 1950, plays: 6800 },
-  { rank: 4, title: "Neon Lights", artist: "Alex Rivera", favorites: 1820, plays: 6200 },
-  { rank: 5, title: "Paradise Lost", artist: "Echo Dreams", favorites: 1650, plays: 5500 },
-  { rank: 6, title: "Cosmic Journey", artist: "Space Travelers", favorites: 1520, plays: 5100 },
-  { rank: 7, title: "Sunset Horizon", artist: "Golden Hour", favorites: 1380, plays: 4600 },
-  { rank: 8, title: "Starlight", artist: "Luna Moon", favorites: 1240, plays: 4200 },
-  { rank: 9, title: "Urban Beats", artist: "City Sounds", favorites: 1120, plays: 3800 },
-  { rank: 10, title: "Ethereal Vibes", artist: "Quantum Music", favorites: 980, plays: 3300 },
-];
-
-const MOCK_ARTISTS: Artist[] = [
-  { rank: 1, name: "Luna Beats", favorites: 5200, followers: 45000 },
-  { rank: 2, name: "Synthwave Band", favorites: 4800, followers: 42000 },
-  { rank: 3, name: "Chill Vibes", favorites: 4200, followers: 38000 },
-  { rank: 4, name: "Alex Rivera", favorites: 3900, followers: 35000 },
-  { rank: 5, name: "Echo Dreams", favorites: 3600, followers: 32000 },
-  { rank: 6, name: "Space Travelers", favorites: 3200, followers: 28000 },
-  { rank: 7, name: "Golden Hour", favorites: 2800, followers: 25000 },
-  { rank: 8, name: "Luna Moon", favorites: 2400, followers: 22000 },
-  { rank: 9, name: "City Sounds", favorites: 2000, followers: 18000 },
-  { rank: 10, name: "Quantum Music", favorites: 1600, followers: 15000 },
-];
-
 export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }: { dateFilter?: string; onFilterChange?: (filter: string) => void }) {
+  const { getCachedData, clearCache } = useDataCache();
   const [dateFilter, setDateFilter] = useState(dateFilterProp || "all");
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [dateFilter]);
+
+  const getDateFilter = () => {
+    const now = new Date();
+    switch (dateFilter) {
+      case '7days':
+        return new Date(now.setDate(now.getDate() - 7)).toISOString();
+      case '30days':
+        return new Date(now.setDate(now.getDate() - 30)).toISOString();
+      case '90days':
+        return new Date(now.setDate(now.getDate() - 90)).toISOString();
+      default:
+        return null;
+    }
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getCachedData(`admin_favorites_${dateFilter}`, async () => {
+        console.log('🔄 [Admin Favorites] Fetching data...');
+        const dateThreshold = getDateFilter();
+
+        // Fetch top favorited songs
+        let songsQuery = supabase
+          .from('user_favorite_songs')
+          .select(`
+            song_id,
+            songs (
+              id,
+              title,
+              songCover_url,
+              song_artist (
+                artists (id, name, image_url)
+              )
+            )
+          `);
+
+        if (dateThreshold) {
+          songsQuery = songsQuery.gte('created_at', dateThreshold);
+        }
+
+        const { data: favoritesData, error: favError } = await songsQuery;
+
+        if (favError) throw favError;
+
+        // Count favorites per song and get plays
+        const songCounts = new Map<string, { song: any; count: number }>();
+        (favoritesData || []).forEach((fav: any) => {
+          if (fav.songs) {
+            const existing = songCounts.get(fav.song_id) || { song: fav.songs, count: 0 };
+            songCounts.set(fav.song_id, { ...existing, count: existing.count + 1 });
+          }
+        });
+
+        // Get play counts for these songs
+        const songIds = Array.from(songCounts.keys());
+        let playCounts = new Map<string, number>();
+        
+        if (songIds.length > 0) {
+          let playsQuery = supabase
+            .from('user_listens')
+            .select('song_id');
+          
+          if (dateThreshold) {
+            playsQuery = playsQuery.gte('listened_at', dateThreshold);
+          }
+          
+          const { data: playsData } = await playsQuery.in('song_id', songIds);
+          
+          (playsData || []).forEach((play: any) => {
+            playCounts.set(play.song_id, (playCounts.get(play.song_id) || 0) + 1);
+          });
+        }
+
+        const topSongs: Song[] = Array.from(songCounts.entries())
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 10)
+          .map(([songId, { song, count }], index) => ({
+            id: songId,
+            rank: index + 1,
+            title: song.title,
+            artist: song.song_artist?.map((sa: any) => sa.artists.name).join(', ') || 'Unknown',
+            favorites: count,
+            plays: playCounts.get(songId) || 0,
+            cover_url: song.songCover_url
+          }));
+
+        // Calculate artist favorites from song favorites
+        // Get all artists from favorited songs
+        const artistCounts = new Map<string, { artist: { id: string; name: string; image_url?: string }; count: number }>();
+        
+        (favoritesData || []).forEach((fav: any) => {
+          if (fav.songs?.song_artist) {
+            fav.songs.song_artist.forEach((sa: any) => {
+              if (sa.artists) {
+                const artistId = sa.artists.id || sa.artists.name; // Use ID or name as fallback
+                const existing = artistCounts.get(artistId);
+                
+                if (existing) {
+                  artistCounts.set(artistId, { ...existing, count: existing.count + 1 });
+                } else {
+                  artistCounts.set(artistId, { 
+                    artist: {
+                      id: artistId,
+                      name: sa.artists.name,
+                      image_url: sa.artists.image_url
+                    }, 
+                    count: 1 
+                  });
+                }
+              }
+            });
+          }
+        });
+
+        const topArtists: Artist[] = Array.from(artistCounts.entries())
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 10)
+          .map(([artistId, { artist, count }], index) => ({
+            id: artistId,
+            rank: index + 1,
+            name: artist.name,
+            favorites: count,
+            followers: count, // Use favorite count as followers for now
+            image_url: artist.image_url
+          }));
+
+        console.log(`📊 [Admin Favorites] Retrieved ${topSongs.length} songs, ${topArtists.length} artists`);
+        return { songs: topSongs, artists: topArtists };
+      });
+
+      setSongs(data.songs);
+      setArtists(data.artists);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterChange = (filter: string) => {
+    clearCache(`admin_favorites_${dateFilter}`);
     setDateFilter(filter);
     if (onFilterChange) onFilterChange(filter);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
+        <div className="flex items-center justify-center h-96">
+          <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
@@ -79,7 +218,12 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
             </h2>
 
             <div className="space-y-3">
-              {MOCK_SONGS.map((song) => (
+              {songs.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  No favorite songs data available
+                </div>
+              ) : (
+                songs.map((song) => (
                 <div key={song.rank} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors group">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold text-sm">
@@ -101,7 +245,8 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
 
@@ -112,7 +257,12 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
             </h2>
 
             <div className="space-y-3">
-              {MOCK_ARTISTS.map((artist) => (
+              {artists.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  No favorite artists data available
+                </div>
+              ) : (
+                artists.map((artist) => (
                 <div key={artist.rank} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors group">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white font-bold text-sm">
@@ -120,7 +270,7 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
                     </div>
                     <div className="flex-1">
                       <p className="text-white font-semibold text-sm">{artist.name}</p>
-                      <p className="text-slate-400 text-xs">{artist.followers.toLocaleString()} followers</p>
+                      <p className="text-slate-400 text-xs">{artist.favorites} favorites</p>
                     </div>
                   </div>
 
@@ -131,7 +281,8 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
                     </p>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
         </div>
@@ -139,20 +290,32 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-800/60 shadow-lg rounded-xl p-6 border border-purple-500/20">
             <p className="text-slate-400 text-sm">Total Favorites</p>
-            <p className="text-3xl font-bold text-white mt-2">{MOCK_SONGS.reduce((sum, s) => sum + s.favorites, 0).toLocaleString()}</p>
-            <p className="text-green-400 text-xs mt-2">↑ 12% from last period</p>
+            <p className="text-3xl font-bold text-white mt-2">{songs.reduce((sum, s) => sum + s.favorites, 0).toLocaleString()}</p>
+            <p className="text-slate-400 text-xs mt-2">{dateFilter === 'all' ? 'All time' : `Last ${dateFilter}`}</p>
           </div>
 
           <div className="bg-slate-800/60 shadow-lg rounded-xl p-6 border border-purple-500/20">
             <p className="text-slate-400 text-sm">Top Song</p>
-            <p className="text-xl font-bold text-white mt-2">{MOCK_SONGS[0].title}</p>
-            <p className="text-slate-400 text-xs mt-2">{MOCK_SONGS[0].artist}</p>
+            {songs.length > 0 ? (
+              <>
+                <p className="text-xl font-bold text-white mt-2">{songs[0].title}</p>
+                <p className="text-slate-400 text-xs mt-2">{songs[0].artist}</p>
+              </>
+            ) : (
+              <p className="text-slate-500 text-sm mt-2">No data</p>
+            )}
           </div>
 
           <div className="bg-slate-800/60 shadow-lg rounded-xl p-6 border border-purple-500/20">
             <p className="text-slate-400 text-sm">Top Artist</p>
-            <p className="text-xl font-bold text-white mt-2">{MOCK_ARTISTS[0].name}</p>
-            <p className="text-slate-400 text-xs mt-2">{MOCK_ARTISTS[0].followers.toLocaleString()} followers</p>
+            {artists.length > 0 ? (
+              <>
+                <p className="text-xl font-bold text-white mt-2">{artists[0].name}</p>
+                <p className="text-slate-400 text-xs mt-2">{artists[0].favorites} favorites</p>
+              </>
+            ) : (
+              <p className="text-slate-500 text-sm mt-2">No data</p>
+            )}
           </div>
         </div>
       </div>

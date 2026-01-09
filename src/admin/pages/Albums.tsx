@@ -4,6 +4,7 @@ import {
   FaEye, FaEdit, FaTrash, FaCompactDisc, FaMusic, FaRecordVinyl, FaMicrophone, FaTag 
 } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
+import { useDataCache } from "../../contexts/DataCacheContext";
 
 type AlbumType = "album" | "single" | "ep";
 
@@ -31,6 +32,7 @@ interface Album {
 }
 
 export default function Albums() {
+  const { getCachedData, clearCache } = useDataCache();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [allArtists, setAllArtists] = useState<Artist[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
@@ -65,52 +67,56 @@ export default function Albums() {
   const fetchAlbums = async () => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log('🔄 Fetching albums...');
 
-      const { data: albumsData, error } = await supabase
-        .from('albums')
-        .select(`
-          id,
-          title,
-          cover_url,
-          type,
-          release_date,
-          created_at,
-          updated_at,
-          album_artist(
-            artists(id, name, image_url)
-          ),
-          album_category(
-            categories(id, name)
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const data = await getCachedData('admin_albums', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Admin] Fetching albums...');
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ Albums fetched in ${fetchTime.toFixed(0)}ms`);
+        const { data: albumsData, error } = await supabase
+          .from('albums')
+          .select(`
+            id,
+            title,
+            cover_url,
+            type,
+            release_date,
+            created_at,
+            updated_at,
+            album_artist(
+              artists(id, name, image_url)
+            ),
+            album_category(
+              categories(id, name)
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (error) {
-        console.error('❌ Fetch error:', error);
-        throw error;
-      }
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Admin] Albums fetched in ${fetchTime.toFixed(0)}ms`);
 
-      // Transform the data to match our interface
-      const transformedAlbums = (albumsData || []).map(album => ({
-        id: album.id,
-        title: album.title,
-        cover_url: album.cover_url,
-        type: album.type,
-        release_date: album.release_date,
-        created_at: album.created_at,
-        updated_at: album.updated_at,
-        artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
-        categories: album.album_category?.map((ac: any) => ac.categories).filter(Boolean) || []
-      }));
+        if (error) {
+          console.error('❌ Fetch error:', error);
+          throw error;
+        }
 
-      console.log(`📊 Transformed ${transformedAlbums.length} albums`);
-      setAlbums(transformedAlbums);
+        const transformedAlbums = (albumsData || []).map(album => ({
+          id: album.id,
+          title: album.title,
+          cover_url: album.cover_url,
+          type: album.type,
+          release_date: album.release_date,
+          created_at: album.created_at,
+          updated_at: album.updated_at,
+          artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
+          categories: album.album_category?.map((ac: any) => ac.categories).filter(Boolean) || []
+        }));
+
+        console.log(`📊 Transformed ${transformedAlbums.length} albums`);
+        return transformedAlbums;
+      });
+
+      setAlbums(data);
     } catch (error) {
       console.error('Error fetching albums:', error);
       alert('Failed to fetch albums');
@@ -121,14 +127,18 @@ export default function Albums() {
 
   const fetchArtists = async () => {
     try {
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id, name, image_url')
-        .eq('status', true)
-        .order('name');
+      const data = await getCachedData('admin_album_artists', async () => {
+        const { data, error } = await supabase
+          .from('artists')
+          .select('id, name, image_url')
+          .eq('status', true)
+          .order('name');
 
-      if (error) throw error;
-      setAllArtists(data || []);
+        if (error) throw error;
+        return data || [];
+      });
+
+      setAllArtists(data);
     } catch (error) {
       console.error('Error fetching artists:', error);
     }
@@ -136,13 +146,17 @@ export default function Albums() {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name')
-        .order('name');
+      const data = await getCachedData('admin_album_categories', async () => {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('id, name')
+          .order('name');
 
-      if (error) throw error;
-      setAllCategories(data || []);
+        if (error) throw error;
+        return data || [];
+      });
+
+      setAllCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }

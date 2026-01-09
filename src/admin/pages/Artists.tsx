@@ -4,6 +4,7 @@ import {
   FaCamera, FaMars, FaVenus, FaGenderless, FaCalendarAlt, FaCheckCircle, FaTimesCircle
 } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
+import { useDataCache } from "../../contexts/DataCacheContext";
 
 interface Artist {
   id: string;
@@ -18,6 +19,7 @@ interface Artist {
 }
 
 export default function ArtistsManager() {
+  const { getCachedData, clearCache } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -43,13 +45,18 @@ export default function ArtistsManager() {
   const fetchArtists = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('artists')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setArtists(data || []);
+      const data = await getCachedData('admin_artists', async () => {
+        const { data, error } = await supabase
+          .from('artists')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+      });
+
+      setArtists(data);
     } catch (error) {
       console.error('Error fetching artists:', error);
       alert('Failed to fetch artists');
