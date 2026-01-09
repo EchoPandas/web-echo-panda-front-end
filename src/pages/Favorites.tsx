@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSpinner, FaMusic, FaTrash } from "react-icons/fa";
 import { supabase } from "../backend/supabaseClient";
+import { CacheService } from "../backend/cacheService";
 import Song from "../components/Song";
 import { getUserFavorites, removeFromFavorites } from "../backend/favoritesService";
 import { trackSongPlay } from "../backend/playTrackingService";
@@ -48,6 +49,16 @@ const Favorites: React.FC = () => {
       const startTime = performance.now();
       console.log('🔄 [Favorites] Fetching favorite songs...');
 
+      // Check cache first
+      const cacheKey = 'favorite_songs';
+      const cachedData = CacheService.get<SongData[]>(cacheKey);
+      
+      if (cachedData) {
+        setSongs(cachedData);
+        setLoading(false);
+        return;
+      }
+
       // Get user's favorite song IDs
       const favoriteSongIds = await getUserFavorites();
 
@@ -93,12 +104,19 @@ const Favorites: React.FC = () => {
         album: song.albums || null
       }));
 
+      // Cache the result for 30 minutes
+      CacheService.set('favorite_songs', transformedSongs, 30);
       setSongs(transformedSongs);
     } catch (error) {
       console.error('Error fetching favorite songs:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    CacheService.remove('favorite_songs');
+    await fetchFavoriteSongs();
   };
 
   const handlePlay = (songId: string) => {
@@ -146,10 +164,20 @@ const Favorites: React.FC = () => {
     <div className="min-h-screen bg-[#0f0f0f] text-white py-8">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-5xl font-black text-white mb-2 tracking-tight">
+          <div className="flex items-center gap-4">
+            <h1 className="text-5xl font-black text-white tracking-tight">
               Liked <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Songs</span>
             </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="p-2 hover:opacity-70 disabled:opacity-40 transition-opacity text-white"
+              aria-label="Refresh favorites"
+            >
+              <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
             <p className="text-slate-400 text-lg">
               {songs.length} {songs.length === 1 ? 'song' : 'songs'}
             </p>

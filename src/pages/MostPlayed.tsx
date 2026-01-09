@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { CacheService } from "../backend/cacheService";
 import { FaSpinner, FaMusic, FaPlus } from "react-icons/fa";
 import Song from "../components/Song";
 import AlbumCard from "../components/AlbumCard";
@@ -67,12 +68,24 @@ const MostPlayed: React.FC = () => {
       const startTime = performance.now();
       console.log('🔄 [MostPlayed] Fetching most played songs...');
       
+      // Check cache first
+      const cacheKey = 'most_played_songs';
+      const cachedData = CacheService.get<SongData[]>(cacheKey);
+      
+      if (cachedData) {
+        setSongs(cachedData);
+        setLoading(false);
+        return;
+      }
+      
       const songsData = await getMostPlayedSongs(25);
 
       const fetchTime = performance.now() - startTime;
       console.log(`✅ [MostPlayed] Songs fetched in ${fetchTime.toFixed(0)}ms`);
       console.log(`📊 [MostPlayed] Retrieved ${songsData.length} songs`);
 
+      // Cache the result for 30 minutes
+      CacheService.set(cacheKey, songsData, 30);
       setSongs(songsData);
     } catch (error) {
       console.error('Error fetching most played songs:', error);
@@ -86,6 +99,16 @@ const MostPlayed: React.FC = () => {
       setLoadingAlbums(true);
       const startTime = performance.now();
       console.log('🔄 [MostPlayed] Fetching albums...');
+
+      // Check cache first
+      const cacheKey = 'most_played_albums';
+      const cachedData = CacheService.get<any[]>(cacheKey);
+      
+      if (cachedData) {
+        setAlbums(cachedData);
+        setLoadingAlbums(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('albums')
@@ -114,6 +137,8 @@ const MostPlayed: React.FC = () => {
         year: album.release_date ? new Date(album.release_date).getFullYear() : null,
       }));
 
+      // Cache the result for 30 minutes
+      CacheService.set('most_played_albums', transformedAlbums, 30);
       setAlbums(transformedAlbums);
     } catch (error) {
       console.error('Error fetching most played albums:', error);
@@ -128,6 +153,12 @@ const MostPlayed: React.FC = () => {
     
     // Find the song data
     const song = songs.find(s => s.id === songId);
+
+  const handleRefresh = async () => {
+    CacheService.remove('most_played_songs');
+    CacheService.remove('most_played_albums');
+    await Promise.all([fetchMostPlayedSongs(), fetchMostPlayedAlbums()]);
+  };
     if (song && song.audio_url) {
       playSong({
         id: song.id,
@@ -300,10 +331,22 @@ const MostPlayed: React.FC = () => {
       )}
 
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-5xl font-black text-white mb-2 tracking-tight">
-            Most <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Played</span>
-          </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-5xl font-black text-white tracking-tight">
+              Most <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Played</span>
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={loading || loadingAlbums}
+              className="p-2 hover:opacity-70 disabled:opacity-40 transition-opacity text-white"
+              aria-label="Refresh most played"
+            >
+              <svg className={`w-3 h-3 ${(loading || loadingAlbums) ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
           <p className="text-slate-400 text-lg">Your most played tracks</p>
         </div>
 

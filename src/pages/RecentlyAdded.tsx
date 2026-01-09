@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { CacheService } from "../backend/cacheService";
 import { FaSpinner, FaMusic, FaPlus } from "react-icons/fa";
 import Song from "../components/Song";
 import { getUserPlaylists, createPlaylist, addSongToPlaylist, isSongInPlaylist, type Playlist } from "../backend/playlistsService";
@@ -62,6 +63,16 @@ const RecentlyAdded: React.FC = () => {
       const startTime = performance.now();
       console.log('🔄 [RecentlyAdded] Fetching songs...');
       
+      // Check cache first
+      const cacheKey = 'recently_added_songs';
+      const cachedData = CacheService.get<Song[]>(cacheKey);
+      
+      if (cachedData) {
+        setSongs(cachedData);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('songs')
         .select(`
@@ -98,6 +109,8 @@ const RecentlyAdded: React.FC = () => {
         album: song.albums || null
       }));
 
+      // Cache the result for 30 minutes
+      CacheService.set('recently_added_songs', transformedSongs, 30);
       setSongs(transformedSongs);
     } catch (error) {
       console.error('Error fetching recent songs:', error);
@@ -110,6 +123,11 @@ const RecentlyAdded: React.FC = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleRefresh = async () => {
+    CacheService.remove('recently_added_songs');
+    await fetchRecentSongs();
   };
 
   const formatDate = (dateString: string): string => {
@@ -302,10 +320,22 @@ const RecentlyAdded: React.FC = () => {
       )}
 
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-5xl font-black text-white mb-2 tracking-tight">
-            Recently <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Added</span>
-          </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-5xl font-black text-white tracking-tight">
+              Recently <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Added</span>
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="p-2 hover:opacity-70 disabled:opacity-40 transition-opacity text-white"
+              aria-label="Refresh recently added"
+            >
+              <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
           <p className="text-slate-400 text-lg">Latest 25 tracks added to the collection</p>
         </div>
 
