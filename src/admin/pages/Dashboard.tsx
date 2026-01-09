@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   FaUsers,
   FaCompactDisc,
-  FaMusic,
+  FaMusic, 
   FaListUl,
   FaChartBar,
   FaChartLine,
@@ -54,12 +54,33 @@ export default function Dashboard() {
             supabase.from('playlists').select('id', { count: 'exact', head: true }),
           ]);
 
-          // Fetch users count from Firebase Firestore
+          // Fetch users from Firebase Firestore and group by creation month
           let usersCount = 0;
+          let userMonthCounts = new Map<string, number>();
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          // Initialize all months with 0
+          months.forEach(month => userMonthCounts.set(month, 0));
           try {
             const db = getFirestore();
             const usersSnapshot = await getDocs(collection(db, 'users'));
             usersCount = usersSnapshot.size;
+            usersSnapshot.forEach((doc) => {
+              const data = doc.data();
+              // Try to get creation date from known fields
+              let createdAt = data.createdAt || data.created_at || data.created || data.timestamp;
+              if (createdAt && createdAt.toDate) {
+                // Firestore Timestamp object
+                createdAt = createdAt.toDate();
+              } else if (typeof createdAt === 'string' || typeof createdAt === 'number') {
+                createdAt = new Date(createdAt);
+              } else {
+                createdAt = null;
+              }
+              if (createdAt instanceof Date && !isNaN(createdAt.getTime())) {
+                const month = months[createdAt.getMonth()];
+                userMonthCounts.set(month, (userMonthCounts.get(month) || 0) + 1);
+              }
+            });
           } catch (error) {
             console.warn('Failed to fetch users from Firestore:', error);
           }
@@ -78,24 +99,24 @@ export default function Dashboard() {
             .order('created_at', { ascending: true });
 
           // Group songs by month
-          const monthCounts = new Map<string, number>();
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          
-          // Initialize all months with 0
-          months.forEach(month => monthCounts.set(month, 0));
-
-          // Count songs per month
+          const songMonthCounts = new Map<string, number>();
+          months.forEach(month => songMonthCounts.set(month, 0));
           (songsByMonth || []).forEach((song: any) => {
             const date = new Date(song.created_at);
             const month = months[date.getMonth()];
-            monthCounts.set(month, (monthCounts.get(month) || 0) + 1);
+            songMonthCounts.set(month, (songMonthCounts.get(month) || 0) + 1);
           });
 
-          const chartData: ChartData[] = months.map(month => ({
-            month,
-            songs: monthCounts.get(month) || 0,
-            users: usersCount, // Static for now, could be calculated from user creation dates
-          }));
+          // Calculate cumulative user growth per month
+          let cumulativeUsers = 0;
+          const chartData: ChartData[] = months.map(month => {
+            cumulativeUsers += userMonthCounts.get(month) || 0;
+            return {
+              month,
+              songs: songMonthCounts.get(month) || 0,
+              users: cumulativeUsers,
+            };
+          });
 
           console.log('📊 [Admin Dashboard] Stats loaded:', stats.map(s => `${s.title}: ${s.value}`).join(', '));
           return { stats, chartData };

@@ -7,7 +7,6 @@ import HeroBanner from "./artist/HeroBanner";
 import PopularSongs from "./artist/PopularSongs";
 import AlbumsSection from "./artist/AlbumsSection";
 import SingleSongs from "./artist/SingleSongs";
-import PlaylistSection from "./artist/PlaylistSection";
 import FansAlsoListen from "./artist/FansAlsoListen";
 import { FaSpinner } from "react-icons/fa";
 
@@ -93,8 +92,7 @@ const Artist: React.FC = () => {
         <PopularSongs artistId={artist.id} />
         <AlbumsSection artistId={artist.id} />
         <SingleSongs artistId={artist.id} />
-        <PlaylistSection artistId={artist.id} />
-        <FansAlsoListen />
+        <FansAlsoListen artistId={artist.id} />
       </div>
       <AppFooter isLightMode={isLightMode} />
     </>
