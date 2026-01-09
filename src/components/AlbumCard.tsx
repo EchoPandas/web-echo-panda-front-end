@@ -30,7 +30,7 @@ export default function AlbumCard({ album }: Props) {
 
   return (
     <div
-      onClick={() => navigate(`/song/${album.id}`)}
+      onClick={() => navigate(`/album/${album.id}`)}
       className="cursor-pointer group relative h-full flex flex-col bg-zinc-900  p-3 rounded-lg
       "
     >

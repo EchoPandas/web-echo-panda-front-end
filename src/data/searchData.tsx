@@ -6,8 +6,9 @@ export interface Song {
 }
 
 export interface Artist {
-  id: number;
+  id: number | string;
   name: string;
+  image_url?: string;
 }
 
 export const songs: Song[] = [
