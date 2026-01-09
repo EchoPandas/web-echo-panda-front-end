@@ -1,3 +1,5 @@
+import { FaCheckCircle } from "react-icons/fa";
+
 interface Artist {
   id: string;
   name: string;
@@ -13,31 +15,48 @@ interface Props {
 
 export default function HeroBanner({ artist }: Props) {
   return (
-    <div className="relative w-full h-[350px] rounded-xl overflow-hidden border-2 border-purple-500/50">
-     
-      <img
-        src={artist.image_url || "https://images.unsplash.com/photo-1511192336575-5a79af67a629"}
-        alt={artist.name}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      
-     
-      <div className="absolute inset-0 bg-linear-to-r from-purple-600/40 via-pink-500/40 to-blue-600/40 mix-blend-overlay"></div>
-      <div className="absolute inset-0 bg-black/20"></div>
+    <div className="relative w-full bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-6">
+      {/* Background blur effect */}
+      <div
+        className="absolute inset-0 opacity-30 blur-3xl"
+        style={{
+          background: "linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))",
+          zIndex: 0,
+        }}
+      ></div>
 
-   
-      <div className="absolute bottom-6 left-6">
-        <h1 className="text-6xl font-black text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-400 to-blue-400 animate-pulse">
-          {artist.name}
-        </h1>
-        <p className="text-white/80 text-lg mt-2 font-semibold">{artist.role}</p>
-  
-        <div className="h-1 w-32 bg-linear-to-r from-purple-400 to-pink-400 rounded-full mt-2 shadow-[0_0_10px_#a855f7]"></div>
+      {/* Content */}
+      <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-8 max-w-6xl mx-auto">
+        {/* Artist Image - Circular */}
+        <div className="flex-shrink-0">
+          <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-purple-500/50 shadow-2xl shadow-purple-500/50">
+            <img
+              src={artist.image_url || "https://images.unsplash.com/photo-1511192336575-5a79af67a629"}
+              alt={artist.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Artist Info */}
+        <div className="flex-grow text-center md:text-left">
+          {/* Verified Badge */}
+          <div className="flex items-center gap-2 justify-center md:justify-start mb-3">
+            <FaCheckCircle className="text-blue-400 text-sm" />
+            <span className="text-white text-sm font-semibold">Verified Artist</span>
+          </div>
+
+          {/* Artist Name */}
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 drop-shadow-lg">
+            {artist.name}
+          </h1>
+
+          {/* Monthly Listeners - Placeholder */}
+          <p className="text-white/70 text-lg font-medium">
+            Discover amazing music from {artist.name}
+          </p>
+        </div>
       </div>
-
-   
-      <div className="absolute top-4 right-4 w-4 h-4 bg-purple-400 rounded-full shadow-[0_0_15px_#a855f7] animate-bounce"></div>
-      <div className="absolute top-8 right-8 w-2 h-2 bg-blue-400 rounded-full shadow-[0_0_10px_#60a5fa] animate-bounce delay-75"></div>
     </div>
   );
 }

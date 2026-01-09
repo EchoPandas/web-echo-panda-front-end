@@ -27,11 +27,22 @@ export default function AlbumsSection({ artistId }: Props) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {displayedAlbums.map((album) => (
-          <div key={album.id} className="w-full">
-            <AlbumCard album={album} />
-          </div>
-        ))}
+        {displayedAlbums.map((album) => {
+          const adapted = {
+            id: String(album.id),
+            title: album.title,
+            cover_url: "",
+            type: "Album",
+            year: album.year,
+            songs: album.songs,
+            artists: [],
+          };
+          return (
+            <div key={album.id} className="w-full">
+              <AlbumCard album={adapted} />
+            </div>
+          );
+        })}
       </div>
     </section>
   );

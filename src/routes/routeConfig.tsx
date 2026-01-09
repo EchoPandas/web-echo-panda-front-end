@@ -17,6 +17,7 @@ import Alibum from "../pages/Alibum";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
+import ArtistsList from "../pages/ArtistsList";
 import AboutUs from "../pages/AboutUs";
 import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
@@ -24,6 +25,7 @@ import FavoritesPage from "../pages/Favorites";
 import ContactUs from "../pages/ContactUs";
 import SongSection from "../pages/home/Songs";
 import SongDetails from "../components/SongDetail";
+import AlbumDetails from "../pages/Album/AlbumDetails";
 import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
@@ -86,8 +88,8 @@ export const routeConfig: RouteConfig[] = [
   },
   {
     path: "/artist/:id",
-    label: "Artists",
-    icon: FaUserFriends,
+    label: "Artist Details",
+    icon: null,
     component: Artist,
     group: "menu",
     showInSidebar: false,
@@ -96,7 +98,7 @@ export const routeConfig: RouteConfig[] = [
     path: "/artist",
     label: "Artists",
     icon: FaUserFriends,
-    component: Artist,
+    component: ArtistsList,
     group: "menu",
     showInSidebar: true,
   },
@@ -215,6 +217,14 @@ export const routeConfig: RouteConfig[] = [
     path: "/song/:id",
     label: "Song Detail",
     component: SongDetails,
+    group: "other",
+    showInSidebar: false,
+    icon: null,
+  },
+  {
+    path: "/album/:id",
+    label: "Album Detail",
+    component: AlbumDetails,
     group: "other",
     showInSidebar: false,
     icon: null,

@@ -96,7 +96,7 @@ const CategoryAlbums: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <FaSpinner className="text-purple-400 text-5xl animate-spin" />
       </div>
     );
@@ -104,13 +104,13 @@ const CategoryAlbums: React.FC = () => {
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4 opacity-20">🎵</div>
-          <p className="text-slate-400 text-xl">Category not found</p>
+          <p className="text-gray-400 text-xl">Category not found</p>
           <button 
             onClick={() => navigate('/discover')}
-            className="mt-4 px-6 py-3 bg-purple-500 hover:bg-purple-600 rounded-xl font-bold transition-all"
+            className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold transition-all"
           >
             Back to Discover
           </button>
@@ -120,41 +120,39 @@ const CategoryAlbums: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-          >
-            <FaArrowLeft /> Back
-          </button>
-          
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-4xl shadow-2xl">
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
+        >
+          <FaArrowLeft size={18} /> Back
+        </button>
+        
+        <div className="mb-10">
+          <div className="flex items-start gap-6 mb-6">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-5xl md:text-6xl shadow-2xl flex-shrink-0">
               🎵
             </div>
-            <div>
-              <h1 className="text-5xl font-black tracking-tight">
+            <div className="flex-1">
+              <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-2">
                 {category.name}
               </h1>
               {category.description && (
-                <p className="text-slate-400 text-lg mt-2">{category.description}</p>
+                <p className="text-gray-400 text-lg leading-relaxed">{category.description}</p>
               )}
             </div>
           </div>
           
-          <p className="text-slate-500">
-            {albums.length} {albums.length === 1 ? 'album' : 'albums'} in this category
+          <p className="text-gray-500 font-medium">
+            {albums.length} {albums.length === 1 ? 'album' : 'albums'}
           </p>
         </div>
 
-        {/* Albums Grid */}
         {albums.length === 0 ? (
           <div className="text-center py-32">
             <div className="text-6xl mb-4 opacity-20">📀</div>
-            <p className="text-slate-400 text-xl">No albums in this category yet</p>
+            <p className="text-gray-400 text-xl">No albums in this category yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

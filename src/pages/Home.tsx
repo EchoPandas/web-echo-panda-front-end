@@ -45,14 +45,14 @@ const Home: React.FC = () => {
       )}
 
       {/* Songs Sections */}
-      <SongSection title="Trending Songs" isLightMode={isLightMode} />
-      <ArtistSection title="Popular Artists" isLightMode={isLightMode} />
-      <SongSection title="K-POP Songs" isLightMode={isLightMode} />
-      <SongSection title="Chinese Songs" isLightMode={isLightMode} />
-      <SongSection title="Indonesian Songs" isLightMode={isLightMode} />
-      <SongSection title="Khmer Songs" isLightMode={isLightMode} />
-      <SongSection title="Top Albums" isLightMode={isLightMode} />
-      <SongSection title="Mood Playlists" isLightMode={isLightMode} />
+      <SongSection title="Trending Songs" isLightMode={isLightMode} limit={6} offset={0} />
+      <ArtistSection title="Popular Artists" isLightMode={isLightMode} layout="grid" />
+      <SongSection title="K-POP Songs" isLightMode={isLightMode} limit={1} offset={6} />
+      <SongSection title="Chinese Songs" isLightMode={isLightMode} limit={1} offset={7} />
+      <SongSection title="Indonesian Songs" isLightMode={isLightMode} limit={1} offset={8} />
+      <SongSection title="Khmer Songs" isLightMode={isLightMode} limit={1} offset={9} />
+      <SongSection title="Top Albums" isLightMode={isLightMode} limit={5} offset={10} />
+      <SongSection title="Mood Playlists" isLightMode={isLightMode} limit={5} offset={15} />
 
       {/* Contact Us */}
       <div className="mb-12">

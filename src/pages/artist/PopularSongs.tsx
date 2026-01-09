@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../backend/supabaseClient';
 import { FaSpinner } from 'react-icons/fa';
+import { isSongFavorite, toggleFavorite } from '../../backend/favoritesService';
 
 interface Song {
   id: string;
@@ -29,6 +30,13 @@ export default function PopularSongs({ artistId }: Props) {
   useEffect(() => {
     fetchArtistSongs();
   }, [artistId]);
+
+  useEffect(() => {
+    // Check favorite status for all songs
+    songs.forEach(song => {
+      checkFavoriteStatus(song.id);
+    });
+  }, [songs]);
 
   const fetchArtistSongs = async () => {
     try {
@@ -77,11 +85,19 @@ export default function PopularSongs({ artistId }: Props) {
 
   const displayedSongs = showAll ? songs : songs.slice(0, 5);
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+  const checkFavoriteStatus = async (songId: string) => {
+    const isFav = await isSongFavorite(songId);
+    setFavorites(prev => ({ ...prev, [songId]: isFav }));
+  };
+
+  const handleToggleFavorite = async (songId: string) => {
+    const success = await toggleFavorite(songId);
+    if (success) {
+      setFavorites(prev => ({
+        ...prev,
+        [songId]: !prev[songId]
+      }));
+    }
   };
 
   const formatDuration = (seconds: number): string => {
@@ -152,7 +168,7 @@ export default function PopularSongs({ artistId }: Props) {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(song.id);
+                      handleToggleFavorite(song.id);
                     }}
                     className="p-2 hover:bg-white/10 rounded-full transition-all group"
                   >
