@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { useDataCache } from "../contexts/DataCacheContext";
 import AppFooter from "./home/AppFooter";
 import { FaSpinner } from "react-icons/fa";
 
@@ -16,6 +17,7 @@ interface Artist {
 }
 
 const ArtistsList: React.FC = () => {
+  const { getCachedData } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,22 +31,27 @@ const ArtistsList: React.FC = () => {
   const fetchArtists = async () => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log("🔄 [ArtistsList] Fetching all artists...");
 
-      const { data, error } = await supabase
-        .from("artists")
-        .select("*")
-        .eq("status", true)
-        .order("name", { ascending: true });
+      const data = await getCachedData('all_artists', async () => {
+        const startTime = performance.now();
+        console.log("🔄 [ArtistsList] Fetching all artists...");
 
-      const fetchTime = performance.now() - startTime;
-      console.log(
-        `✅ [ArtistsList] Artists fetched in ${fetchTime.toFixed(0)}ms. Count: ${data?.length || 0}`
-      );
+        const { data: artistsData, error } = await supabase
+          .from("artists")
+          .select("*")
+          .eq("status", true)
+          .order("name", { ascending: true });
 
-      if (error) throw error;
-      setArtists(data || []);
+        const fetchTime = performance.now() - startTime;
+        console.log(
+          `✅ [ArtistsList] Artists fetched in ${fetchTime.toFixed(0)}ms. Count: ${artistsData?.length || 0}`
+        );
+
+        if (error) throw error;
+        return artistsData || [];
+      });
+
+      setArtists(data);
     } catch (error) {
       console.error("Error fetching artists:", error);
     } finally {

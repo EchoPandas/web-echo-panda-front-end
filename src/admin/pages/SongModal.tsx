@@ -207,7 +207,15 @@ export default function SongModal({
           })
           .eq('id', editingSong.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('❌ Update error details:', updateError);
+          console.error('Error message:', updateError.message);
+          console.error('Error code:', updateError.code);
+          alert(`Failed to update song: ${updateError.message}`);
+          throw updateError;
+        }
+
+        console.log('✅ Song updated successfully');
 
         // Delete existing artist relationships
         await supabase
@@ -223,9 +231,15 @@ export default function SongModal({
             primary_artist: true
           }));
 
-          await supabase
+          const { error: artistError } = await supabase
             .from('song_artist')
             .insert(artistRelations);
+            
+          if (artistError) {
+            console.error('❌ Artist relationship error:', artistError);
+            alert(`Failed to add artists: ${artistError.message}`);
+            throw artistError;
+          }
         }
       } else {
         // Insert new song
@@ -241,7 +255,16 @@ export default function SongModal({
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('❌ Insert error details:', insertError);
+          console.error('Error message:', insertError.message);
+          console.error('Error code:', insertError.code);
+          console.error('Error details:', insertError.details);
+          alert(`Failed to insert song: ${insertError.message}`);
+          throw insertError;
+        }
+
+        console.log('✅ Song inserted successfully:', newSong);
 
         // Insert artist relationships
         if (selectedArtistIds.length > 0) {
@@ -251,17 +274,25 @@ export default function SongModal({
             primary_artist: true
           }));
 
-          await supabase
+          const { error: artistError } = await supabase
             .from('song_artist')
             .insert(artistRelations);
+            
+          if (artistError) {
+            console.error('❌ Artist relationship error:', artistError);
+            alert(`Failed to add artists: ${artistError.message}`);
+            throw artistError;
+          }
         }
       }
 
       onSave();
       onClose();
-    } catch (error) {
-      console.error('Error saving song:', error);
-      alert('Failed to save song');
+    } catch (error: any) {
+      console.error('❌ Error saving song:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      const errorDetails = error?.details || '';
+      alert(`Failed to save song: ${errorMessage}${errorDetails ? '\n' + errorDetails : ''}`);
     } finally {
       setUploading(false);
     }

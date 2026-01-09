@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ArtistSection from '../home/Artists';
 import { supabase } from '../../backend/supabaseClient';
+import { useDataCache } from '../../contexts/DataCacheContext';
 
 interface Artist {
   id: string;
@@ -9,6 +10,7 @@ interface Artist {
 }
 
 export default function FansAlsoListen() {
+  const { getCachedData } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,14 +20,18 @@ export default function FansAlsoListen() {
 
   const fetchArtists = async () => {
     try {
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id, name, image_url')
-        .eq('status', true)
-        .order('name', { ascending: true });
+      const data = await getCachedData('fans_also_listen_artists', async () => {
+        const { data: artistsData, error } = await supabase
+          .from('artists')
+          .select('id, name, image_url')
+          .eq('status', true)
+          .order('name', { ascending: true });
 
-      if (error) throw error;
-      setArtists(data || []);
+        if (error) throw error;
+        return artistsData || [];
+      });
+
+      setArtists(data);
     } catch (error) {
       console.error('Error fetching artists:', error);
     } finally {

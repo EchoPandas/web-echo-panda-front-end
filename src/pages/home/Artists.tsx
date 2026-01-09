@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../backend/supabaseClient";
-import { CacheService } from "../../backend/cacheService";
+import { useDataCache } from "../../contexts/DataCacheContext";
 import { FaSpinner } from "react-icons/fa";
 
 interface Artist {
@@ -19,6 +19,7 @@ interface Props {
 
 const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true, limit = 10, layout = "carousel" }) => {
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const bgClass = "bg-transparent";
@@ -32,30 +33,22 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true,
   const fetchArtists = async () => {
     try {
       setLoading(true);
-      
-      // Check cache first
-      const cacheKey = `artists_limit${limit}`;
-      const cachedData = CacheService.get<Artist[]>(cacheKey);
-      
-      if (cachedData) {
-        setArtists(cachedData);
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch from Supabase if not cached
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id, name, image_url')
-        .eq('status', true)
-        .order('created_at', { ascending: false })
-        .limit(Math.max(1, limit));
 
-      if (error) throw error;
-      
-      // Cache the result for 30 minutes
-      CacheService.set(cacheKey, data || [], 30);
-      setArtists(data || []);
+      const data = await getCachedData(`artists_limit${limit}`, async () => {
+        // Fetch from Supabase if not cached
+        const { data: artistsData, error } = await supabase
+          .from('artists')
+          .select('id, name, image_url')
+          .eq('status', true)
+          .order('created_at', { ascending: false })
+          .limit(Math.max(1, limit));
+
+        if (error) throw error;
+
+        return artistsData || [];
+      });
+
+      setArtists(data);
     } catch (error) {
       console.error('Error fetching artists:', error);
     } finally {
@@ -63,26 +56,10 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true,
     }
   };
 
-  const handleRefresh = async () => {
-    const cacheKey = `artists_limit${limit}`;
-    CacheService.remove(cacheKey);
-    await fetchArtists();
-  };
-
   return (
     <section className={`${bgClass} p-4 rounded-lg`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-2xl font-bold ${textColor}`}>{title}</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className={`p-2 hover:opacity-70 disabled:opacity-40 transition-opacity ${textColor}`}
-          aria-label="Refresh artists"
-        >
-          <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
       </div>
 
       {layout === "grid" ? (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
-import { CacheService } from "../backend/cacheService";
+import { useDataCache } from "../contexts/DataCacheContext";
 import AppFooter from "./home/AppFooter";
 import HeroBanner from "./artist/HeroBanner";
 import PopularSongs from "./artist/PopularSongs";
@@ -24,6 +24,7 @@ interface Artist {
 
 const Artist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { getCachedData } = useDataCache();
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
   const isLightMode = false;
@@ -37,32 +38,25 @@ const Artist: React.FC = () => {
   const fetchArtist = async (artistId: string) => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log(`🔄 [Artist] Fetching artist ${artistId}...`);
-      
-      // Check cache first
-      const cacheKey = `artist_${artistId}`;
-      const cachedData = CacheService.get<Artist>(cacheKey);
-      
-      if (cachedData) {
-        setArtist(cachedData);
-        setLoading(false);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('artists')
-        .select('*')
-        .eq('id', artistId)
-        .single();
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ [Artist] Artist fetched in ${fetchTime.toFixed(0)}ms`);
+      const data = await getCachedData(`artist_${artistId}`, async () => {
+        const startTime = performance.now();
+        console.log(`🔄 [Artist] Fetching artist ${artistId}...`);
+        
+        const { data: artistData, error } = await supabase
+          .from('artists')
+          .select('*')
+          .eq('id', artistId)
+          .single();
 
-      if (error) throw error;
-      
-      // Cache the result for 30 minutes
-      CacheService.set(cacheKey, data, 30);
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Artist] Artist fetched in ${fetchTime.toFixed(0)}ms`);
+
+        if (error) throw error;
+
+        return artistData;
+      });
+
       setArtist(data);
     } catch (error) {
       console.error('Error fetching artist:', error);
@@ -71,12 +65,7 @@ const Artist: React.FC = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    if (id) {
-      CacheService.remove(`artist_${id}`);
-      await fetchArtist(id);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -99,7 +88,7 @@ const Artist: React.FC = () => {
 
   return (
     <>
-      <HeroBanner artist={artist} onRefresh={handleRefresh} loading={loading} />
+      <HeroBanner artist={artist} />
       <div className="space-y-10 p-6 text-white">
         <PopularSongs artistId={artist.id} />
         <AlbumsSection artistId={artist.id} />

@@ -354,8 +354,17 @@ const SongDetails: React.FC = () => {
     console.log('🎵 handlePlay called with songId:', songId);
     trackSongPlay(songId);
     
-    // Find the song data to play
-    const songToPlay = albumSongs.find(s => s.id === songId) || currentSong;
+    // Find the song data to play - check current song first, then album songs
+    let songToPlay = null;
+    
+    if (currentSong?.id === songId) {
+      songToPlay = currentSong;
+      console.log('🎵 Playing current song');
+    } else {
+      songToPlay = albumSongs.find(s => s.id === songId);
+      console.log('🎵 Playing song from album list');
+    }
+    
     console.log('🎵 Song to play:', songToPlay);
     console.log('🎵 Has audio_url?', !!songToPlay?.audio_url);
     console.log('🎵 audio_url value:', songToPlay?.audio_url);

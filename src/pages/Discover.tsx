@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { useDataCache } from "../contexts/DataCacheContext";
 import SongSection from "./home/Songs";
 import ArtistSection from "./home/Artists";
 import AppFooter from "./home/AppFooter";
@@ -13,6 +14,7 @@ interface Category {
 
 const Discover: React.FC = () => {
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const isLightMode = false;
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -28,20 +30,25 @@ const Discover: React.FC = () => {
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
-      const startTime = performance.now();
-      console.log('🔄 [Discover] Fetching categories...');
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name', { ascending: true });
+      const data = await getCachedData('categories', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Discover] Fetching categories...');
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ [Discover] Categories fetched in ${fetchTime.toFixed(0)}ms`);
-      console.log(`📊 [Discover] Retrieved ${data?.length || 0} categories`);
+        const { data: categoriesData, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name', { ascending: true });
 
-      if (error) throw error;
-      setCategories(data || []);
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Discover] Categories fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`📊 [Discover] Retrieved ${categoriesData?.length || 0} categories`);
+
+        if (error) throw error;
+        return categoriesData || [];
+      });
+
+      setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
