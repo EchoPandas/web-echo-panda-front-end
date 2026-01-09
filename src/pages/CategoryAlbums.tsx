@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaArrowLeft } from "react-icons/fa";
 import AlbumCard from "../components/AlbumCard";
 
@@ -27,6 +28,7 @@ interface Category {
 const CategoryAlbums: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const [category, setCategory] = useState<Category | null>(null);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,53 +42,57 @@ const CategoryAlbums: React.FC = () => {
   const fetchCategoryAndAlbums = async (categoryId: string) => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log(`🔄 [CategoryAlbums] Fetching category ${categoryId}...`);
 
-      // Fetch category details
-      const { data: categoryData, error: categoryError } = await supabase
+      const data = await getCachedData(`category_albums_${categoryId}`, async () => {
+        const startTime = performance.now();
+        console.log(`🔄 [CategoryAlbums] Fetching category ${categoryId}...`);
+
+        // Fetch category details
+        const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
         .select('*')
         .eq('id', categoryId)
         .single();
 
-      if (categoryError) throw categoryError;
-      setCategory(categoryData);
+        if (categoryError) throw categoryError;
 
-      // Fetch albums in this category
-      const { data: albumData, error: albumError } = await supabase
-        .from('album_category')
-        .select(`
-          albums(
-            id,
-            title,
-            cover_url,
-            type,
-            album_artist(
-              artists(id, name, image_url)
+        // Fetch albums in this category
+        const { data: albumData, error: albumError } = await supabase
+          .from('album_category')
+          .select(`
+            albums(
+              id,
+              title,
+              cover_url,
+              type,
+              album_artist(
+                artists(id, name, image_url)
+              )
             )
-          )
-        `)
-        .eq('category_id', categoryId);
+          `)
+          .eq('category_id', categoryId);
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ [CategoryAlbums] Data fetched in ${fetchTime.toFixed(0)}ms`);
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [CategoryAlbums] Data fetched in ${fetchTime.toFixed(0)}ms`);
 
-      if (albumError) throw albumError;
+        if (albumError) throw albumError;
 
-      const transformedAlbums: Album[] = (albumData || [])
-        .map((item: any) => item.albums)
-        .filter(Boolean)
-        .map((album: any) => ({
-          id: album.id,
-          title: album.title,
-          cover_url: album.cover_url,
-          type: album.type,
-          artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || []
-        }));
+        const transformedAlbums: Album[] = (albumData || [])
+          .map((item: any) => item.albums)
+          .filter(Boolean)
+          .map((album: any) => ({
+            id: album.id,
+            title: album.title,
+            cover_url: album.cover_url,
+            type: album.type,
+            artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || []
+          }));
 
-      console.log(`📊 [CategoryAlbums] Retrieved ${transformedAlbums.length} albums`);
-      setAlbums(transformedAlbums);
+        return { category: categoryData, albums: transformedAlbums };
+      });
+
+      setCategory(data.category);
+      setAlbums(data.albums);
     } catch (error) {
       console.error('Error fetching category albums:', error);
     } finally {

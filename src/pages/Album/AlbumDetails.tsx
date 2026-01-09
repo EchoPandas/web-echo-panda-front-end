@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaEllipsisH, FaSpinner } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
-import { CacheService } from "../../backend/cacheService";
+import { useDataCache } from "../../contexts/DataCacheContext";
 import Song from "../../components/Song";
 
 interface Artist {
@@ -40,6 +40,7 @@ const formatDate = (iso?: string) => {
 const AlbumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
 
   const [loading, setLoading] = useState(true);
   const [album, setAlbum] = useState<AlbumMeta | null>(null);
@@ -56,19 +57,9 @@ const AlbumDetails: React.FC = () => {
     try {
       setLoading(true);
 
-      // Check cache first
-      const cacheKey = `album_details_${albumId}`;
-      const cachedData = CacheService.get<{ album: AlbumMeta; songs: SongData[] }>(cacheKey);
-      
-      if (cachedData) {
-        setAlbum(cachedData.album);
-        setSongs(cachedData.songs);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch album meta including artists
-      const { data: albumData, error: albumError } = await supabase
+      const data = await getCachedData(`album_details_${albumId}`, async () => {
+        // Fetch album meta including artists
+        const { data: albumData, error: albumError } = await supabase
         .from("albums")
         .select(`
           id,
@@ -85,51 +76,51 @@ const AlbumDetails: React.FC = () => {
 
       if (albumError) throw albumError;
 
-      const meta: AlbumMeta = {
-        id: albumData.id,
-        title: albumData.title,
-        cover_url: albumData.cover_url || undefined,
-        release_date: albumData.release_date || undefined,
-        type: albumData.type || undefined,
-        artists: albumData.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
-      };
-      setAlbum(meta);
+        const meta: AlbumMeta = {
+          id: albumData.id,
+          title: albumData.title,
+          cover_url: albumData.cover_url || undefined,
+          release_date: albumData.release_date || undefined,
+          type: albumData.type || undefined,
+          artists: albumData.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
+        };
 
-      // Fetch songs in the album
-      const { data: songsData, error: songsError } = await supabase
-        .from("songs")
-        .select(`
-          id,
-          title,
-          duration,
-          album_id,
-          audio_url,
-          songCover_url,
-          created_at,
-          song_artist(
-            artists(id, name, image_url)
-          )
-        `)
-        .eq("album_id", albumId)
-        .order("created_at", { ascending: true });
+        // Fetch songs in the album
+        const { data: songsData, error: songsError } = await supabase
+          .from("songs")
+          .select(`
+            id,
+            title,
+            duration,
+            album_id,
+            audio_url,
+            songCover_url,
+            created_at,
+            song_artist(
+              artists(id, name, image_url)
+            )
+          `)
+          .eq("album_id", albumId)
+          .order("created_at", { ascending: true });
 
-      if (songsError) throw songsError;
+        if (songsError) throw songsError;
 
-      const transformed: SongData[] = (songsData || []).map((s: any) => ({
-        id: s.id,
-        title: s.title,
-        duration: s.duration,
-        album_id: s.album_id,
-        audio_url: s.audio_url,
-        songCover_url: s.songCover_url,
-        created_at: s.created_at,
-        artists: s.song_artist?.map((sa: any) => sa.artists) || [],
-      }));
+        const transformed: SongData[] = (songsData || []).map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          duration: s.duration,
+          album_id: s.album_id,
+          audio_url: s.audio_url,
+          songCover_url: s.songCover_url,
+          created_at: s.created_at,
+          artists: s.song_artist?.map((sa: any) => sa.artists) || [],
+        }));
 
-      // Cache the combined result for 30 minutes
-      CacheService.set(`album_details_${albumId}`, { album: meta, songs: transformed }, 30);
-      
-      setSongs(transformed);
+        return { album: meta, songs: transformed };
+      });
+
+      setAlbum(data.album);
+      setSongs(data.songs);
     } catch (err) {
       console.error("Failed to load album:", err);
     } finally {
@@ -137,12 +128,7 @@ const AlbumDetails: React.FC = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    if (id) {
-      CacheService.remove(`album_details_${id}`);
-      await loadAlbum(id);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -173,16 +159,6 @@ const AlbumDetails: React.FC = () => {
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="bg-black/40 hover:bg-black/60 p-2 rounded-full text-white transition">
             <FaArrowLeft size={16} />
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="bg-black/40 hover:bg-black/60 disabled:opacity-40 p-2 rounded-full text-white transition"
-            aria-label="Refresh album"
-          >
-            <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
           </button>
           <button className="bg-black/40 hover:bg-black/60 p-2 rounded-full text-white transition">
             <FaEllipsisH size={16} />

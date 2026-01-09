@@ -4,7 +4,7 @@ import { FaPlay, FaRandom, FaHeart, FaMusic, FaTrash, FaList, FaPlus, FaSpinner 
 import { PlaylistHero } from './playList/PlaylistHero';
 import AppFooter from './home/AppFooter';
 import Song from '../components/Song';
-import { CacheService } from '../backend/cacheService';
+import { useDataCache } from '../contexts/DataCacheContext';
 import { 
   getUserPlaylists, 
   createPlaylist, 
@@ -168,6 +168,7 @@ const PlaylistSelectorModal: React.FC<{
 const PlaylistPage: React.FC = () => {
   const navigate = useNavigate();
   const { playSong } = useAudioPlayer();
+  const { getCachedData } = useDataCache();
   const [songs, setSongs] = useState<SongData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -195,21 +196,11 @@ const PlaylistPage: React.FC = () => {
   const loadPlaylists = async () => {
     try {
       setPlaylistsLoading(true);
-      
-      // Check cache first
-      const cacheKey = 'user_playlists';
-      const cachedData = CacheService.get<Playlist[]>(cacheKey);
-      
-      if (cachedData) {
-        setPlaylists(cachedData);
-        setPlaylistsLoading(false);
-        return;
-      }
-      
-      const data = await getUserPlaylists();
-      
-      // Cache the result for 30 minutes
-      CacheService.set(cacheKey, data, 30);
+
+      const data = await getCachedData('user_playlists', async () => {
+        return await getUserPlaylists();
+      });
+
       setPlaylists(data);
     } catch (error) {
       console.error('Error loading playlists:', error);
@@ -222,21 +213,11 @@ const PlaylistPage: React.FC = () => {
   const loadPlaylistSongs = async (playlistId: string) => {
     try {
       setLoading(true);
-      
-      // Check cache first
-      const cacheKey = `playlist_songs_${playlistId}`;
-      const cachedData = CacheService.get<SongData[]>(cacheKey);
-      
-      if (cachedData) {
-        setSongs(cachedData);
-        setLoading(false);
-        return;
-      }
-      
-      const data = await getPlaylistSongs(playlistId);
-      
-      // Cache the result for 30 minutes
-      CacheService.set(cacheKey, data, 30);
+
+      const data = await getCachedData(`playlist_songs_${playlistId}`, async () => {
+        return await getPlaylistSongs(playlistId);
+      });
+
       setSongs(data);
     } catch (error) {
       console.error('Error loading playlist songs:', error);
@@ -247,16 +228,7 @@ const PlaylistPage: React.FC = () => {
   };
 
   // --- Handlers ---
-  const handleRefresh = async () => {
-    CacheService.remove('user_playlists');
-    if (selectedPlaylistId) {
-      CacheService.remove(`playlist_songs_${selectedPlaylistId}`);
-    }
-    await loadPlaylists();
-    if (selectedPlaylistId) {
-      await loadPlaylistSongs(selectedPlaylistId);
-    }
-  };
+
 
   const handleCreatePlaylist = async (name: string) => {
     try {
@@ -440,16 +412,6 @@ const PlaylistPage: React.FC = () => {
         <section className="mb-10 mt-5">
           <div className="flex items-center gap-4 mb-5">
             <h3 className="text-xs font-bold uppercase text-gray-300">Your Library</h3>
-            <button
-              onClick={handleRefresh}
-              disabled={playlistsLoading || loading}
-              className="p-1.5 hover:opacity-70 disabled:opacity-40 transition-opacity text-gray-300"
-              aria-label="Refresh playlists"
-            >
-              <svg className={`w-3 h-3 ${(playlistsLoading || loading) ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
           </div>
 
           {playlistsLoading ? (

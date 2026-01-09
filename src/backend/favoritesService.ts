@@ -41,9 +41,11 @@ export const isSongFavorite = async (songId: string): Promise<boolean> => {
 export const addToFavorites = async (songId: string): Promise<boolean> => {
   const uid = getCurrentUserUID();
   if (!uid) {
-    console.error("User not logged in");
+    console.error("❌ [Favorites] User not logged in - cannot add to favorites");
     return false;
   }
+
+  console.log(`🔄 [Favorites] Adding song ${songId} to favorites for user ${uid}`);
 
   try {
     const { error } = await supabase
@@ -54,14 +56,20 @@ export const addToFavorites = async (songId: string): Promise<boolean> => {
       });
 
     if (error) {
-      console.error("Error adding to favorites:", error);
+      console.error("❌ [Favorites] Error adding to favorites:", error);
+      console.error("❌ [Favorites] Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
       return false;
     }
 
-    console.log(`✅ Song ${songId} added to favorites`);
+    console.log(`✅ [Favorites] Song ${songId} added to favorites`);
     return true;
   } catch (error) {
-    console.error("Error adding to favorites:", error);
+    console.error("❌ [Favorites] Exception adding to favorites:", error);
     return false;
   }
 };
@@ -119,11 +127,15 @@ export const getUserFavorites = async (): Promise<string[]> => {
 
 // Toggle favorite status
 export const toggleFavorite = async (songId: string): Promise<boolean> => {
+  console.log(`🔄 [Favorites] Toggling favorite status for song ${songId}`);
   const isFav = await isSongFavorite(songId);
+  console.log(`📊 [Favorites] Current favorite status: ${isFav ? 'IS FAVORITE' : 'NOT FAVORITE'}`);
   
   if (isFav) {
+    console.log(`🔄 [Favorites] Removing from favorites...`);
     return await removeFromFavorites(songId);
   } else {
+    console.log(`🔄 [Favorites] Adding to favorites...`);
     return await addToFavorites(songId);
   }
 };

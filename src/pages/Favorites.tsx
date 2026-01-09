@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSpinner, FaMusic, FaTrash } from "react-icons/fa";
 import { supabase } from "../backend/supabaseClient";
-import { CacheService } from "../backend/cacheService";
+import { useDataCache } from "../contexts/DataCacheContext";
 import Song from "../components/Song";
 import { getUserFavorites, removeFromFavorites } from "../backend/favoritesService";
 import { trackSongPlay } from "../backend/playTrackingService";
@@ -36,6 +36,7 @@ interface SongData {
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,64 +50,54 @@ const Favorites: React.FC = () => {
       const startTime = performance.now();
       console.log('🔄 [Favorites] Fetching favorite songs...');
 
-      // Check cache first
-      const cacheKey = 'favorite_songs';
-      const cachedData = CacheService.get<SongData[]>(cacheKey);
-      
-      if (cachedData) {
-        setSongs(cachedData);
-        setLoading(false);
-        return;
-      }
+      const data = await getCachedData('favorite_songs', async () => {
+        // Get user's favorite song IDs
+        const favoriteSongIds = await getUserFavorites();
 
-      // Get user's favorite song IDs
-      const favoriteSongIds = await getUserFavorites();
+        if (favoriteSongIds.length === 0) {
+          return [];
+        }
 
-      if (favoriteSongIds.length === 0) {
-        setSongs([]);
-        setLoading(false);
-        return;
-      }
+        // Fetch full song details
+        const { data: songsData, error } = await supabase
+          .from('songs')
+          .select(`
+            id,
+            title,
+            duration,
+            album_id,
+            audio_url,
+            songCover_url,
+            created_at,
+            song_artist(
+              artists(id, name, image_url)
+            ),
+            albums(id, title, cover_url)
+          `)
+          .in('id', favoriteSongIds);
 
-      // Fetch full song details
-      const { data, error } = await supabase
-        .from('songs')
-        .select(`
-          id,
-          title,
-          duration,
-          album_id,
-          audio_url,
-          songCover_url,
-          created_at,
-          song_artist(
-            artists(id, name, image_url)
-          ),
-          albums(id, title, cover_url)
-        `)
-        .in('id', favoriteSongIds);
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Favorites] Songs fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`📊 [Favorites] Retrieved ${songsData?.length || 0} songs`);
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ [Favorites] Songs fetched in ${fetchTime.toFixed(0)}ms`);
-      console.log(`📊 [Favorites] Retrieved ${data?.length || 0} songs`);
+        if (error) throw error;
 
-      if (error) throw error;
+        const transformedSongs: SongData[] = (songsData || []).map((song: any) => ({
+          id: song.id,
+          title: song.title,
+          duration: song.duration,
+          album_id: song.album_id,
+          audio_url: song.audio_url,
+          songCover_url: song.songCover_url,
+          created_at: song.created_at,
+          artists: song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || [],
+          album: song.albums || null
+        }));
 
-      const transformedSongs: SongData[] = (data || []).map((song: any) => ({
-        id: song.id,
-        title: song.title,
-        duration: song.duration,
-        album_id: song.album_id,
-        audio_url: song.audio_url,
-        songCover_url: song.songCover_url,
-        created_at: song.created_at,
-        artists: song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || [],
-        album: song.albums || null
-      }));
+        return transformedSongs;
+      });
 
-      // Cache the result for 30 minutes
-      CacheService.set('favorite_songs', transformedSongs, 30);
-      setSongs(transformedSongs);
+      setSongs(data);
     } catch (error) {
       console.error('Error fetching favorite songs:', error);
     } finally {
@@ -114,10 +105,7 @@ const Favorites: React.FC = () => {
     }
   };
 
-  const handleRefresh = async () => {
-    CacheService.remove('favorite_songs');
-    await fetchFavoriteSongs();
-  };
+
 
   const handlePlay = (songId: string) => {
     trackSongPlay(songId);
@@ -168,20 +156,10 @@ const Favorites: React.FC = () => {
             <h1 className="text-5xl font-black text-white tracking-tight">
               Liked <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Songs</span>
             </h1>
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="p-2 hover:opacity-70 disabled:opacity-40 transition-opacity text-white"
-              aria-label="Refresh favorites"
-            >
-              <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-            <p className="text-slate-400 text-lg">
-              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-            </p>
           </div>
+          <p className="text-slate-400 text-lg">
+            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+          </p>
           {songs.length > 0 && (
             <button
               onClick={handleClearAll}

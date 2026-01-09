@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../backend/supabaseClient";
-import { CacheService } from "../../backend/cacheService";
+import { useDataCache } from "../../contexts/DataCacheContext";
 import AlbumCard from "../../components/AlbumCard";
 import { FaSpinner } from "react-icons/fa";
 
@@ -37,6 +37,7 @@ const SongSection: React.FC<Props> = ({
   const textColor = isLightMode ? "text-gray-900" : "text-white";
 
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -49,19 +50,10 @@ const SongSection: React.FC<Props> = ({
   const fetchAlbums = async () => {
     try {
       setLoading(true);
-      
-      // Check cache first
-      const cacheKey = CacheService.getPaginationKey('albums', limit, offset);
-      const cachedData = CacheService.get<Album[]>(cacheKey);
-      
-      if (cachedData) {
-        setAlbums(cachedData);
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch from Supabase if not cached
-      const { data, error } = await supabase
+
+      const data = await getCachedData(`albums_${limit}_${offset}`, async () => {
+        // Fetch from Supabase if not cached
+        const { data: albumsData, error } = await supabase
         .from('albums')
         .select(`
           id,
@@ -76,20 +68,21 @@ const SongSection: React.FC<Props> = ({
         .order('created_at', { ascending: false })
         .range(Math.max(0, offset), Math.max(0, offset) + Math.max(1, limit) - 1);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const transformedAlbums: Album[] = (data || []).map((album: any) => ({
-        id: album.id,
-        title: album.title,
-        cover_url: album.cover_url,
-        type: album.type,
-        release_date: album.release_date,
-        artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || []
-      }));
+        const transformedAlbums: Album[] = (albumsData || []).map((album: any) => ({
+          id: album.id,
+          title: album.title,
+          cover_url: album.cover_url,
+          type: album.type,
+          release_date: album.release_date,
+          artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || []
+        }));
 
-      // Cache the result for 30 minutes
-      CacheService.set(cacheKey, transformedAlbums, 30);
-      setAlbums(transformedAlbums);
+        return transformedAlbums;
+      });
+
+      setAlbums(data);
     } catch (error) {
       console.error('Error fetching albums:', error);
     } finally {
@@ -97,11 +90,7 @@ const SongSection: React.FC<Props> = ({
     }
   };
 
-  const handleRefresh = async () => {
-    const cacheKey = CacheService.getPaginationKey('albums', limit, offset);
-    CacheService.remove(cacheKey);
-    await fetchAlbums();
-  };
+
 
   const handlePlay = (id: string) => {
     setPlayingId(id);
@@ -138,16 +127,6 @@ const SongSection: React.FC<Props> = ({
         <h2 className={`text-xl md:text-2xl lg:text-3xl font-bold ${textColor}`}>
           {title}
         </h2>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className={`p-2 hover:opacity-70 disabled:opacity-40 transition-opacity ${textColor}`}
-          aria-label="Refresh albums"
-        >
-          <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
       </div>
 
       <div className="w-full overflow-x-auto overflow-y-hidden pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-500">

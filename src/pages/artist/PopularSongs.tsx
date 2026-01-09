@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../backend/supabaseClient';
+import { useDataCache } from '../../contexts/DataCacheContext';
 import { FaSpinner } from 'react-icons/fa';
 import { isSongFavorite, toggleFavorite } from '../../backend/favoritesService';
 
@@ -22,6 +23,7 @@ interface Props {
 
 export default function PopularSongs({ artistId }: Props) {
   const navigate = useNavigate();
+  const { getCachedData } = useDataCache();
   const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
   const [showAll, setShowAll] = useState(false);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -41,41 +43,46 @@ export default function PopularSongs({ artistId }: Props) {
   const fetchArtistSongs = async () => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log(`🔄 [PopularSongs] Fetching songs for artist ${artistId}...`);
-      
-      const { data, error } = await supabase
-        .from('song_artist')
-        .select(`
-          songs(
-            id,
-            title,
-            duration,
-            created_at,
-            albums(id, title, cover_url)
-          )
-        `)
-        .eq('artist_id', artistId)
-        .limit(10);
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ [PopularSongs] Songs fetched in ${fetchTime.toFixed(0)}ms`);
-      console.log(`📊 [PopularSongs] Retrieved ${data?.length || 0} songs`);
+      const data = await getCachedData(`artist_songs_${artistId}`, async () => {
+        const startTime = performance.now();
+        console.log(`🔄 [PopularSongs] Fetching songs for artist ${artistId}...`);
+        
+        const { data: songsData, error } = await supabase
+          .from('song_artist')
+          .select(`
+            songs(
+              id,
+              title,
+              duration,
+              created_at,
+              albums(id, title, cover_url)
+            )
+          `)
+          .eq('artist_id', artistId)
+          .limit(10);
 
-      if (error) throw error;
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [PopularSongs] Songs fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`📊 [PopularSongs] Retrieved ${songsData?.length || 0} songs`);
 
-      const transformedSongs: Song[] = (data || [])
-        .map((item: any) => item.songs)
-        .filter(Boolean)
-        .map((song: any) => ({
-          id: song.id,
-          title: song.title,
-          duration: song.duration,
-          created_at: song.created_at,
-          album: song.albums
-        }));
+        if (error) throw error;
 
-      setSongs(transformedSongs);
+        const transformedSongs: Song[] = (songsData || [])
+          .map((item: any) => item.songs)
+          .filter(Boolean)
+          .map((song: any) => ({
+            id: song.id,
+            title: song.title,
+            duration: song.duration,
+            created_at: song.created_at,
+            album: song.albums
+          }));
+
+        return transformedSongs;
+      });
+
+      setSongs(data);
     } catch (error) {
       console.error('Error fetching artist songs:', error);
     } finally {
