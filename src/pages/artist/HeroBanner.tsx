@@ -11,9 +11,11 @@ interface Artist {
 
 interface Props {
   artist: Artist;
+  onRefresh?: () => void;
+  loading?: boolean;
 }
 
-export default function HeroBanner({ artist }: Props) {
+export default function HeroBanner({ artist, onRefresh, loading }: Props) {
   return (
     <div className="relative w-full bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-6">
       {/* Background blur effect */}
@@ -44,6 +46,18 @@ export default function HeroBanner({ artist }: Props) {
           <div className="flex items-center gap-2 justify-center md:justify-start mb-3">
             <FaCheckCircle className="text-blue-400 text-sm" />
             <span className="text-white text-sm font-semibold">Verified Artist</span>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={loading}
+                className="ml-2 p-1.5 hover:opacity-70 disabled:opacity-40 transition-opacity text-white"
+                aria-label="Refresh artist"
+              >
+                <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Artist Name */}

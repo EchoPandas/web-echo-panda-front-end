@@ -23,7 +23,21 @@ interface AuthResult {
 
 // Google Sign In
 export async function SignInWithGoogle(): Promise<UserData> {
-  const result = await signInWithPopup(auth, googleProvider);
+  let result;
+  
+  try {
+    result = await signInWithPopup(auth, googleProvider);
+  } catch (popupError: any) {
+    // Handle Cross-Origin-Opener-Policy errors
+    if (popupError.code === 'auth/popup-blocked' || 
+        popupError.code === 'auth/popup-closed-by-user' ||
+        popupError.message?.includes('COOP') ||
+        popupError.message?.includes('window.closed')) {
+      throw new Error('Popup was blocked or closed. Please allow popups for this site and try again.');
+    }
+    throw popupError;
+  }
+  
   const user = result.user;
 
   // Check user status in Firestore first

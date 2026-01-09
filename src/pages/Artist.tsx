@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
+import { CacheService } from "../backend/cacheService";
 import AppFooter from "./home/AppFooter";
 import HeroBanner from "./artist/HeroBanner";
 import PopularSongs from "./artist/PopularSongs";
@@ -39,6 +40,16 @@ const Artist: React.FC = () => {
       const startTime = performance.now();
       console.log(`🔄 [Artist] Fetching artist ${artistId}...`);
       
+      // Check cache first
+      const cacheKey = `artist_${artistId}`;
+      const cachedData = CacheService.get<Artist>(cacheKey);
+      
+      if (cachedData) {
+        setArtist(cachedData);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('artists')
         .select('*')
@@ -49,11 +60,21 @@ const Artist: React.FC = () => {
       console.log(`✅ [Artist] Artist fetched in ${fetchTime.toFixed(0)}ms`);
 
       if (error) throw error;
+      
+      // Cache the result for 30 minutes
+      CacheService.set(cacheKey, data, 30);
       setArtist(data);
     } catch (error) {
       console.error('Error fetching artist:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (id) {
+      CacheService.remove(`artist_${id}`);
+      await fetchArtist(id);
     }
   };
 
@@ -78,7 +99,7 @@ const Artist: React.FC = () => {
 
   return (
     <>
-      <HeroBanner artist={artist} />
+      <HeroBanner artist={artist} onRefresh={handleRefresh} loading={loading} />
       <div className="space-y-10 p-6 text-white">
         <PopularSongs artistId={artist.id} />
         <AlbumsSection artistId={artist.id} />

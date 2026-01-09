@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaEllipsisH, FaSpinner } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
+import { CacheService } from "../../backend/cacheService";
 import Song from "../../components/Song";
 
 interface Artist {
@@ -54,6 +55,17 @@ const AlbumDetails: React.FC = () => {
   const loadAlbum = async (albumId: string) => {
     try {
       setLoading(true);
+
+      // Check cache first
+      const cacheKey = `album_details_${albumId}`;
+      const cachedData = CacheService.get<{ album: AlbumMeta; songs: SongData[] }>(cacheKey);
+      
+      if (cachedData) {
+        setAlbum(cachedData.album);
+        setSongs(cachedData.songs);
+        setLoading(false);
+        return;
+      }
 
       // Fetch album meta including artists
       const { data: albumData, error: albumError } = await supabase
@@ -114,11 +126,21 @@ const AlbumDetails: React.FC = () => {
         artists: s.song_artist?.map((sa: any) => sa.artists) || [],
       }));
 
+      // Cache the combined result for 30 minutes
+      CacheService.set(`album_details_${albumId}`, { album: meta, songs: transformed }, 30);
+      
       setSongs(transformed);
     } catch (err) {
       console.error("Failed to load album:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (id) {
+      CacheService.remove(`album_details_${id}`);
+      await loadAlbum(id);
     }
   };
 
@@ -151,6 +173,16 @@ const AlbumDetails: React.FC = () => {
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="bg-black/40 hover:bg-black/60 p-2 rounded-full text-white transition">
             <FaArrowLeft size={16} />
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="bg-black/40 hover:bg-black/60 disabled:opacity-40 p-2 rounded-full text-white transition"
+            aria-label="Refresh album"
+          >
+            <svg className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </button>
           <button className="bg-black/40 hover:bg-black/60 p-2 rounded-full text-white transition">
             <FaEllipsisH size={16} />
