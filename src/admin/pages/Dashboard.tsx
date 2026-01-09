@@ -6,7 +6,11 @@ import {
   FaListUl,
   FaChartBar,
   FaChartLine,
+  FaSpinner,
 } from "react-icons/fa";
+import { supabase } from "../../backend/supabaseClient";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { useDataCache } from "../../contexts/DataCacheContext";
 
 
 interface StatCard {
@@ -14,7 +18,6 @@ interface StatCard {
   value: number;
   icon: React.ReactNode;
   color: string;
-  trend?: number;
 }
 
 interface Activity {
@@ -33,6 +36,7 @@ interface ChartData {
 }
 
 export default function Dashboard() {
+  const { getCachedData } = useDataCache();
   const [stats, setStats] = useState<StatCard[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,32 +44,65 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        await new Promise((r) => setTimeout(r, 400));
+        const data = await getCachedData('admin_dashboard', async () => {
+          console.log('🔄 [Admin Dashboard] Fetching statistics...');
 
-        const mockStats: StatCard[] = [
-          { title: "Total Users", value: 1234, icon: <FaUsers />, color: "from-blue-500 to-cyan-500", trend: 12 },
-          { title: "Total Songs", value: 5678, icon: <FaCompactDisc />, color: "from-purple-500 to-pink-500", trend: 8 },
-          { title: "Total Artists", value: 342, icon: <FaMusic />, color: "from-green-500 to-emerald-500", trend: 5 },
-          { title: "Total Playlists", value: 456, icon: <FaListUl />, color: "from-orange-500 to-red-500", trend: 3 },
-        ];
+          // Fetch counts from Supabase
+          const [songsResult, artistsResult, playlistsResult] = await Promise.all([
+            supabase.from('songs').select('id', { count: 'exact', head: true }),
+            supabase.from('artists').select('id', { count: 'exact', head: true }),
+            supabase.from('playlists').select('id', { count: 'exact', head: true }),
+          ]);
 
-        const mockChartData: ChartData[] = [
-          { month: "Jan", songs: 120, users: 400 },
-          { month: "Feb", songs: 154, users: 480 },
-          { month: "Mar", songs: 187, users: 520 },
-          { month: "Apr", songs: 145, users: 580 },
-          { month: "May", songs: 210, users: 620 },
-          { month: "Jun", songs: 245, users: 720 },
-          { month: "Jul", songs: 290, users: 850 },
-          { month: "Aug", songs: 312, users: 980 },
-          { month: "Sep", songs: 268, users: 1050 },
-          { month: "Oct", songs: 345, users: 1150 },
-          { month: "Nov", songs: 380, users: 1220 },
-          { month: "Dec", songs: 410, users: 1234 },
-        ];
+          // Fetch users count from Firebase Firestore
+          let usersCount = 0;
+          try {
+            const db = getFirestore();
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            usersCount = usersSnapshot.size;
+          } catch (error) {
+            console.warn('Failed to fetch users from Firestore:', error);
+          }
 
-        setStats(mockStats);
-        setChartData(mockChartData);
+          const stats: StatCard[] = [
+            { title: "Total Users", value: usersCount, icon: <FaUsers />, color: "from-blue-500 to-cyan-500" },
+            { title: "Total Songs", value: songsResult.count || 0, icon: <FaCompactDisc />, color: "from-purple-500 to-pink-500" },
+            { title: "Total Artists", value: artistsResult.count || 0, icon: <FaMusic />, color: "from-green-500 to-emerald-500" },
+            { title: "Total Playlists", value: playlistsResult.count || 0, icon: <FaListUl />, color: "from-orange-500 to-red-500" },
+          ];
+
+          // Fetch monthly song creation data for chart
+          const { data: songsByMonth } = await supabase
+            .from('songs')
+            .select('created_at')
+            .order('created_at', { ascending: true });
+
+          // Group songs by month
+          const monthCounts = new Map<string, number>();
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          
+          // Initialize all months with 0
+          months.forEach(month => monthCounts.set(month, 0));
+
+          // Count songs per month
+          (songsByMonth || []).forEach((song: any) => {
+            const date = new Date(song.created_at);
+            const month = months[date.getMonth()];
+            monthCounts.set(month, (monthCounts.get(month) || 0) + 1);
+          });
+
+          const chartData: ChartData[] = months.map(month => ({
+            month,
+            songs: monthCounts.get(month) || 0,
+            users: usersCount, // Static for now, could be calculated from user creation dates
+          }));
+
+          console.log('📊 [Admin Dashboard] Stats loaded:', stats.map(s => `${s.title}: ${s.value}`).join(', '));
+          return { stats, chartData };
+        });
+
+        setStats(data.stats);
+        setChartData(data.chartData);
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -83,6 +120,16 @@ export default function Dashboard() {
     .map((d, i) => `${(i * (560 / chartData.length)) + 30},${350 - (d.users / (maxUsers || 1)) * 250}`)
     .join(" ");
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
+        <div className="flex items-center justify-center h-96">
+          <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -98,7 +145,6 @@ export default function Dashboard() {
               <div>
                 <p className="text-slate-400 text-sm font-medium">{s.title}</p>
                 <h3 className="text-3xl font-extrabold text-white mt-2">{s.value.toLocaleString()}</h3>
-                {s.trend != null && <p className="text-green-400 text-sm mt-2">▲ {s.trend}% this month</p>}
               </div>
               <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${s.color} flex items-center justify-center text-white text-2xl`}>{s.icon}</div>
             </div>

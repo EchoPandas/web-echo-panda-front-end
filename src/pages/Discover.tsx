@@ -2,14 +2,25 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../backend/supabaseClient";
 import { useDataCache } from "../contexts/DataCacheContext";
+import { getMostPlayedAlbums } from "../backend/playTrackingService";
 import SongSection from "./home/Songs";
 import ArtistSection from "./home/Artists";
+import AlbumCard from "../components/AlbumCard";
 import AppFooter from "./home/AppFooter";
+import { FaSpinner } from "react-icons/fa";
 
 interface Category {
   id: string;
   name: string;
   description: string;
+}
+
+interface Album {
+  id: string;
+  title: string;
+  cover_url: string;
+  release_date: string;
+  artists: Array<{ id: string; name: string; image_url: string }>;
 }
 
 const Discover: React.FC = () => {
@@ -18,6 +29,10 @@ const Discover: React.FC = () => {
   const isLightMode = false;
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [newReleaseAlbums, setNewReleaseAlbums] = useState<Album[]>([]);
+  const [topAlbums, setTopAlbums] = useState<Album[]>([]);
+  const [loadingNewReleases, setLoadingNewReleases] = useState(true);
+  const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
 
   const circleClass = isLightMode
     ? "bg-gray-200 text-gray-900 border-gray-300"
@@ -25,6 +40,8 @@ const Discover: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchNewReleaseAlbums();
+    fetchTopAlbums();
   }, []);
 
   const fetchCategories = async () => {
@@ -53,6 +70,76 @@ const Discover: React.FC = () => {
       console.error('Error fetching categories:', error);
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  const fetchNewReleaseAlbums = async () => {
+    try {
+      setLoadingNewReleases(true);
+
+      const data = await getCachedData('new_release_albums', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Discover] Fetching new release albums...');
+
+        const { data: albumsData, error } = await supabase
+          .from('albums')
+          .select(`
+            id,
+            title,
+            cover_url,
+            release_date,
+            album_artist(
+              artists(id, name, image_url)
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Discover] New releases fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`📊 [Discover] Retrieved ${albumsData?.length || 0} albums`);
+
+        if (error) throw error;
+
+        return (albumsData || []).map((album: any) => ({
+          id: album.id,
+          title: album.title,
+          cover_url: album.cover_url,
+          release_date: album.release_date,
+          artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
+        }));
+      });
+
+      setNewReleaseAlbums(data);
+    } catch (error) {
+      console.error('Error fetching new release albums:', error);
+    } finally {
+      setLoadingNewReleases(false);
+    }
+  };
+
+  const fetchTopAlbums = async () => {
+    try {
+      setLoadingTopAlbums(true);
+
+      const data = await getCachedData('discover_top_albums', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Discover] Fetching top albums...');
+
+        const albumsData = await getMostPlayedAlbums(10);
+
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ [Discover] Top albums fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`📊 [Discover] Retrieved ${albumsData.length} albums`);
+
+        return albumsData;
+      });
+
+      setTopAlbums(data);
+    } catch (error) {
+      console.error('Error fetching top albums:', error);
+    } finally {
+      setLoadingTopAlbums(false);
     }
   };
 
@@ -103,8 +190,48 @@ const Discover: React.FC = () => {
       {/* Songs Sections */}
       <SongSection title="Featured Charts" isLightMode={isLightMode} limit={1} offset={0} />
       <ArtistSection title="Popular Artists" isLightMode={isLightMode} />
-      <SongSection title="New Release Songs" isLightMode={isLightMode} limit={1} offset={1} />
-      <SongSection title="Top Albums" isLightMode={isLightMode} limit={1} offset={2} />
+
+      {/* New Release Albums */}
+      <div className="px-4 md:px-8 py-8 max-w-7xl mx-auto">
+        <h2 className="text-3xl font-black mb-6 text-white tracking-tight">
+          New Release <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Albums</span>
+        </h2>
+        {loadingNewReleases ? (
+          <div className="flex items-center justify-center py-12">
+            <FaSpinner className="text-purple-400 text-3xl animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {newReleaseAlbums.map((album) => (
+              <AlbumCard
+                key={album.id}
+                album={album}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Top Albums */}
+      <div className="px-4 md:px-8 py-8 max-w-7xl mx-auto">
+        <h2 className="text-3xl font-black mb-6 text-white tracking-tight">
+          Top <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Albums</span>
+        </h2>
+        {loadingTopAlbums ? (
+          <div className="flex items-center justify-center py-12">
+            <FaSpinner className="text-purple-400 text-3xl animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {topAlbums.map((album) => (
+              <AlbumCard
+                key={album.id}
+                album={album}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Footer */}
       <AppFooter isLightMode={isLightMode} />

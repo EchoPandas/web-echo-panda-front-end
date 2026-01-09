@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { FaSearch, FaCalendarAlt, FaSpinner, FaCopy, FaCheck, FaBan, FaCheckCircle } from "react-icons/fa";
+import { useDataCache } from "../../contexts/DataCacheContext";
 import { getAuth } from "firebase/auth";
 import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { app } from "../../routes/firebaseConfig";
@@ -17,6 +18,7 @@ interface UserItem {
 }
 
 export default function UsersManager() {
+  const { getCachedData, clearCache } = useDataCache();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,23 +31,27 @@ export default function UsersManager() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
-      const usersCollection = collection(db, "users");
-      const usersSnapshot = await getDocs(usersCollection);
-      
-      const usersList: UserItem[] = usersSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          photoURL: data.photoURL || "",
-          displayName: data.displayName || data.username || "Unknown User",
-          email: data.email || "",
-          registeredAt: data.registeredAt || data.createdAt || new Date().toISOString(),
-          status: data.status || "active",
-        };
+
+      const data = await getCachedData('admin_users', async () => {
+        const usersCollection = collection(db, "users");
+        const usersSnapshot = await getDocs(usersCollection);
+        
+        const usersList: UserItem[] = usersSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            photoURL: data.photoURL || "",
+            displayName: data.displayName || data.username || "Unknown User",
+            email: data.email || "",
+            registeredAt: data.registeredAt || data.createdAt || new Date().toISOString(),
+            status: data.status || "active",
+          };
+        });
+
+        return usersList;
       });
       
-      setUsers(usersList);
+      setUsers(data);
     } catch (error) {
       console.error("Error fetching users:", error);
       alert("Failed to load users. Make sure you have proper permissions.");

@@ -6,6 +6,7 @@ import {
 } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
 import { deleteFromR2 } from "../../backend/r2Client";
+import { useDataCache } from "../../contexts/DataCacheContext";
 import SongModal from "./SongModal";
 // main song component
 // Data fetching & state management
@@ -37,6 +38,7 @@ interface Song {
 }
 
 export default function SongsManager() {
+  const { getCachedData, clearCache } = useDataCache();
   const [songs, setSongs] = useState<Song[]>([]);
   const [allArtists, setAllArtists] = useState<Artist[]>([]);
   const [allAlbums, setAllAlbums] = useState<Album[]>([]);
@@ -58,35 +60,37 @@ export default function SongsManager() {
   const fetchSongs = async () => {
     try {
       setLoading(true);
-      const startTime = performance.now();
-      console.log('🔄 Fetching songs...');
 
-      const { data: songsData, error } = await supabase
-        .from('songs')
-        .select(`
-          id,
-          title,
-          duration,
-          album_id,
-          audio_url,
-          songCover_url,
-          created_at,
-          updated_at,
-          song_artist(
-            artists(id, name, image_url)
-          ),
-          albums(id, title, cover_url)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const data = await getCachedData('admin_songs', async () => {
+        const startTime = performance.now();
+        console.log('🔄 [Admin] Fetching songs...');
 
-      const fetchTime = performance.now() - startTime;
-      console.log(`✅ Songs fetched in ${fetchTime.toFixed(0)}ms`);
+        const { data: songsData, error } = await supabase
+          .from('songs')
+          .select(`
+            id,
+            title,
+            duration,
+            album_id,
+            audio_url,
+            songCover_url,
+            created_at,
+            updated_at,
+            song_artist(
+              artists(id, name, image_url)
+            ),
+            albums(id, title, cover_url)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (error) {
-        console.error('❌ Fetch error:', error);
-        throw error;
-      }
+        const fetchTime = performance.now() - startTime;
+        console.log(`✅ Songs fetched in ${fetchTime.toFixed(0)}ms`);
+
+        if (error) {
+          console.error('❌ Fetch error:', error);
+          throw error;
+        }
 
       // Transform the data to match our interface
       const transformedSongs = (songsData || []).map((song: any) => ({
@@ -102,9 +106,13 @@ export default function SongsManager() {
         album: song.albums || null
       }));
 
-      console.log(`📊 Transformed ${transformedSongs.length} songs`);
-      console.log('🖼️ First song cover URL:', transformedSongs[0]?.songCover_url);
-      setSongs(transformedSongs);
+        console.log(`📊 Transformed ${transformedSongs.length} songs`);
+        console.log('🖼️ First song cover URL:', transformedSongs[0]?.songCover_url);
+
+        return transformedSongs;
+      });
+
+      setSongs(data);
     } catch (error) {
       console.error('Error fetching songs:', error);
       alert('Failed to fetch songs');
@@ -115,14 +123,18 @@ export default function SongsManager() {
 
   const fetchArtists = async () => {
     try {
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id, name, image_url')
-        .eq('status', true)
-        .order('name');
+      const data = await getCachedData('admin_artists_list', async () => {
+        const { data, error } = await supabase
+          .from('artists')
+          .select('id, name, image_url')
+          .eq('status', true)
+          .order('name');
 
-      if (error) throw error;
-      setAllArtists(data || []);
+        if (error) throw error;
+        return data || [];
+      });
+
+      setAllArtists(data);
     } catch (error) {
       console.error('Error fetching artists:', error);
     }
@@ -130,13 +142,17 @@ export default function SongsManager() {
 
   const fetchAlbums = async () => {
     try {
-      const { data, error } = await supabase
-        .from('albums')
-        .select('id, title, cover_url')
-        .order('title');
+      const data = await getCachedData('admin_albums_list', async () => {
+        const { data, error } = await supabase
+          .from('albums')
+          .select('id, title, cover_url')
+          .order('title');
 
-      if (error) throw error;
-      setAllAlbums(data || []);
+        if (error) throw error;
+        return data || [];
+      });
+
+      setAllAlbums(data);
     } catch (error) {
       console.error('Error fetching albums:', error);
     }
@@ -206,6 +222,7 @@ export default function SongsManager() {
       }
 
       setSongs(songs.filter(s => s.id !== id));
+      clearCache('admin_songs'); // Clear cache after deletion
     } catch (error) {
       console.error('Error deleting song:', error);
       alert('Failed to delete song');

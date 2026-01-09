@@ -9,6 +9,7 @@ import {
   FaTags,
   FaListUl,
   FaCog,
+  FaBookmark,
 } from "react-icons/fa";
 
 interface MenuItem {
@@ -26,6 +27,7 @@ const menus: MenuItem[] = [
   { name: "Songs", path: "/admin/songs", icon: <FaCompactDisc /> },
   { name: "Categories", path: "/admin/categories", icon: <FaTags /> },
   { name: "Albums", path: "/admin/albums", icon: <FaListUl /> },
+  { name: "Tags", path: "/admin/tags", icon: <FaBookmark /> },
   { name: "Settings", path: "/admin/settings", icon: <FaCog /> },
 ];
 

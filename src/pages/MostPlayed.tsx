@@ -5,7 +5,7 @@ import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaMusic, FaPlus } from "react-icons/fa";
 import Song from "../components/Song";
 import AlbumCard from "../components/AlbumCard";
-import { getMostPlayedSongs, trackSongPlay } from "../backend/playTrackingService";
+import { getMostPlayedSongs, getMostPlayedAlbums, trackSongPlay } from "../backend/playTrackingService";
 import { getUserPlaylists, createPlaylist, addSongToPlaylist, isSongInPlaylist, type Playlist } from "../backend/playlistsService";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
 
@@ -94,33 +94,21 @@ const MostPlayed: React.FC = () => {
 
       const data = await getCachedData('most_played_albums', async () => {
         const startTime = performance.now();
-        console.log('🔄 [MostPlayed] Fetching albums...');
+        console.log('🔄 [MostPlayed] Fetching most played albums...');
         
-        const { data: albumsData, error } = await supabase
-          .from('albums')
-          .select(`
-            id,
-            title,
-            cover_url,
-            release_date,
-            artist_id,
-            artists(id, name, image_url)
-          `)
-          .order('release_date', { ascending: false })
-          .limit(10);
+        const albumsData = await getMostPlayedAlbums(10);
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [MostPlayed] Albums fetched in ${fetchTime.toFixed(0)}ms`);
-        console.log(`📊 [MostPlayed] Retrieved ${albumsData?.length || 0} albums`);
+        console.log(`📊 [MostPlayed] Retrieved ${albumsData.length} albums with play counts`);
 
-        if (error) throw error;
-
-        const transformedAlbums = (albumsData || []).map((album: any) => ({
+        const transformedAlbums = albumsData.map((album: any) => ({
           id: album.id,
           title: album.title,
-          artist: album.artists?.name || 'Unknown Artist',
+          artist: album.artists?.[0]?.name || 'Unknown Artist',
           cover: album.cover_url || '',
           year: album.release_date ? new Date(album.release_date).getFullYear() : null,
+          play_count: album.play_count,
         }));
 
         return transformedAlbums;
