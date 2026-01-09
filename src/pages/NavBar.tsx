@@ -12,7 +12,7 @@ import {
 } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import { getCurrentUser, isAuthenticated } from "../routes/authContext";
-import { searchContent } from "../data/searchData";
+import { searchContent } from "../backend/searchService";
 interface NavBarProps {
   isLightMode: boolean;
   setIsLightMode: (value: boolean) => void;
@@ -167,16 +167,20 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
     }
   };
 
-  const performSearch = (query: string) => {
+  const performSearch = async (query: string) => {
     if (!query.trim()) return;
 
-    // Perform search 
-    const results = searchContent(query);
-    setSearchResults(results);
-    console.log("Search Results:", results);
+    try {
+      // Perform search from Supabase
+      const results = await searchContent(query);
+      setSearchResults(results);
+      console.log("Search Results:", results);
 
-    // Navigate to search result page with query 
-    navigate(`/search?q=${encodeURIComponent(query)}`);
+      // Navigate to search result page with query 
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+    } catch (error) {
+      console.error("Search error:", error);
+    }
   };
 
   const headerBg = isLightMode

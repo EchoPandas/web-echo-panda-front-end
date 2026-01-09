@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { searchContent, Song, Artist } from "../data/searchData";
-import SongSection from "./home/Songs";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { searchContent, Song, Artist } from "../backend/searchService";
 import ArtistSection from "./home/Artists";
 
 interface SearchPageProps {
@@ -13,51 +12,46 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
   const query = searchParams.get("q") || "";
   const [songs, setSongs] = useState<Song[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
-  const [recommendedArtists, setRecommendedArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Search Effect
   useEffect(() => {
     if (!query.trim()) {
       setSongs([]);
       setArtists([]);
-      setRecommendedSongs([]);
-      setRecommendedArtists([]);
       return;
     }
 
     setLoading(true);
 
-    const timer = setTimeout(() => {
-      const results = searchContent(query);
-      setSongs(results.songs);
-      setArtists(results.artists);
-
-      // Recommended songs 
-      const recSongs = results.songs.length
-        ? searchContent("").songs.filter(
-            (s) => !results.songs.find((rs) => rs.id === s.id)
-          )
-        : [];
-      setRecommendedSongs(recSongs.slice(0, 5));
-
-      // Recommended artists
-      const recArtists = results.artists.length
-        ? searchContent("").artists.filter(
-            (a) => !results.artists.find((ra) => ra.id === a.id)
-          )
-        : [];
-      setRecommendedArtists(recArtists.slice(0, 5));
-
-      setLoading(false);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchContent(query);
+        setSongs(results.songs);
+        setArtists(results.artists);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSongs([]);
+        setArtists([]);
+      } finally {
+        setLoading(false);
+      }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);
 
+  const handleSongClick = (songId: number | string) => {
+    navigate(`/song/${songId}`);
+  };
+
+  const handleArtistClick = (artistId: number | string) => {
+    navigate(`/artist/${artistId}`);
+  };
+
   return (
-    <div className={`bg-black text-white`}>
+    <div className={`bg-black text-white min-h-screen`}>
       <div className={`bg-gray-900 p-6 md:p-8`}>
         <h1 className="text-4xl md:text-5xl font-bold mb-2">Search Results</h1>
         {query.trim() ? (
@@ -91,27 +85,105 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
           </p>
         </div>
       ) : (
-        <>
+        <div className="p-6 md:p-8 space-y-8">
+          {/* Songs Section */}
           {songs.length > 0 && (
-            <SongSection songs={songs} title={`Songs (${songs.length})`} isLightMode={false} />
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Songs ({songs.length})</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {songs.map((song) => (
+                  <div
+                    key={song.id}
+                    onClick={() => handleSongClick(song.id)}
+                    className="cursor-pointer group relative h-full flex flex-col bg-zinc-900 p-3 rounded-lg"
+                  >
+                    {/* Song Cover Image */}
+                    <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+                      {song.cover_url ? (
+                        <img 
+                          src={song.cover_url} 
+                          alt={song.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <svg
+                          className="w-10 h-10 text-zinc-600"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                        </svg>
+                      )}
+
+                      {/* Play Button */}
+                      <button
+                        className="absolute bottom-3 right-3 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 transform bg-green-500 hover:bg-green-600 shadow-green-500/25 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2 hover:scale-105 active:scale-95"
+                        aria-label={`Play song ${song.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSongClick(song.id);
+                        }}
+                      >
+                        <svg
+                          className="w-5 h-5 ml-0.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </button>
+
+                      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                    </div>
+
+                    {/* Song Info */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-semibold line-clamp-2 min-h-10 leading-tight text-white">
+                          {song.title}
+                        </h3>
+                        <p className="text-sm text-zinc-400 line-clamp-1 mb-1">
+                          {song.artist_name || "Unknown Artist"}
+                        </p>
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-auto">
+                        song
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
+          {/* Artists Section */}
           {artists.length > 0 && (
-            <ArtistSection artists={artists} title={`Artists (${artists.length})`} isLightMode={false} />
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Artists ({artists.length})</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {artists.map((artist) => (
+                  <div
+                    key={artist.id}
+                    onClick={() => handleArtistClick(artist.id)}
+                    className="p-4 rounded-lg bg-gray-900 hover:bg-gray-800 cursor-pointer transition-all hover:shadow-lg text-center"
+                  >
+                    {artist.image_url && (
+                      <img
+                        src={artist.image_url}
+                        alt={artist.name}
+                        className="w-full h-32 rounded-lg object-cover mb-3"
+                      />
+                    )}
+                    <p className="font-semibold text-white">{artist.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-
-          {recommendedSongs.length > 0 && (
-            <SongSection songs={recommendedSongs} title="You Might Also Like" isLightMode={false} />
-          )}
-
-          {recommendedArtists.length > 0 && (
-            <ArtistSection artists={recommendedArtists} title="Recommended Artists" isLightMode={false} />
-          )}
-        </>
+        </div>
       )}
     </div>
   );
-
 };
 
 export default SearchPage;

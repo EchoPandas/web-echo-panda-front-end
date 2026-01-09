@@ -106,9 +106,11 @@ const MostPlayed: React.FC = () => {
           id: album.id,
           title: album.title,
           artist: album.artists?.[0]?.name || 'Unknown Artist',
-          cover: album.cover_url || '',
+          cover_url: album.cover_url || '',
           year: album.release_date ? new Date(album.release_date).getFullYear() : null,
           play_count: album.play_count,
+          artists: album.artists || [],
+          songs: album.play_count || 0,
         }));
 
         return transformedAlbums;

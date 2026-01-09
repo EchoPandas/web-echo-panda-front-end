@@ -4,6 +4,8 @@ import {
   FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute
 } from 'react-icons/fa';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
+import { searchContent } from '../backend/searchService';
+import { supabase } from '../backend/supabaseClient';
 
 const Player: React.FC = () => {
   const {
@@ -21,24 +23,28 @@ const Player: React.FC = () => {
     toggleMute,
     toggleShuffle,
     toggleRepeat,
-    playNext,
-    playPrevious,
+    playSong,
   } = useAudioPlayer();
 
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [songQueue, setSongQueue] = useState<any[]>([]);
+  const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       handleProgressMouseMove(e);
+      handleVolumeDrag(e);
     };
 
     const handleMouseUp = () => {
       handleProgressMouseUp();
+      setIsDraggingVolume(false);
     };
 
-    if (isDraggingProgress) {
+    if (isDraggingProgress || isDraggingVolume) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
@@ -47,7 +53,107 @@ const Player: React.FC = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingProgress, duration]);
+  }, [isDraggingProgress, isDraggingVolume, duration]);
+
+  // Keyboard shortcuts for changing songs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Arrow Right or N: Next song
+      if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
+        playNextSong();
+      }
+      // Arrow Left or P: Previous song
+      if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+        playPreviousSong();
+      }
+      // Space: Play/Pause
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlayPause();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [togglePlayPause]);
+
+  // Fetch random songs from database when component mounts
+  useEffect(() => {
+    const fetchRandomSongs = async () => {
+      try {
+        console.log('🎵 Fetching random songs from database');
+        
+        // Fetch all songs from database
+        const { data: allSongs, error } = await supabase
+          .from('songs')
+          .select('id, title, audio_url, songCover_url, album_id')
+          .not('audio_url', 'is', null)
+          .limit(100);
+
+        if (error) {
+          console.error('❌ Error fetching songs:', error);
+          return;
+        }
+
+        if (allSongs && allSongs.length > 0) {
+          // Convert to audio player format
+          const randomSongs = allSongs.map((song: any) => ({
+            id: String(song.id),
+            title: song.title || 'Unknown Song',
+            artist: 'Random Song',
+            coverUrl: song.songCover_url || '',
+            audioUrl: song.audio_url || '',
+          }));
+
+          console.log('✅ Loaded random songs:', randomSongs.length);
+          setSongQueue(randomSongs);
+          setCurrentQueueIndex(0);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching random songs:', error);
+        setSongQueue([]);
+      }
+    };
+
+    fetchRandomSongs();
+  }, []);
+
+  // Play next song - random from database
+  const playNextSong = () => {
+    if (songQueue.length === 0) {
+      console.log('⚠️ No songs available in queue');
+      return;
+    }
+
+    // Get random song from entire queue
+    const randomIndex = Math.floor(Math.random() * songQueue.length);
+    const nextSong = songQueue[randomIndex];
+    console.log('🎵 Playing random next song:', nextSong.title, 'Index:', randomIndex);
+    setCurrentQueueIndex(randomIndex);
+    playSong(nextSong);
+  };
+
+  // Play previous song - random from database
+  const playPreviousSong = () => {
+    if (songQueue.length === 0) {
+      console.log('⚠️ No songs in queue');
+      return;
+    }
+
+    // Get another random song (different approach for "previous")
+    let randomIndex = Math.floor(Math.random() * songQueue.length);
+    // Make sure we don't play the same song
+    while (randomIndex === currentQueueIndex && songQueue.length > 1) {
+      randomIndex = Math.floor(Math.random() * songQueue.length);
+    }
+    
+    const prevSong = songQueue[randomIndex];
+    console.log('🎵 Playing random previous song:', prevSong.title, 'Index:', randomIndex);
+    setCurrentQueueIndex(randomIndex);
+    playSong(prevSong);
+  };
 
   // Don't render if there's no song playing
   if (!currentSong) {
@@ -102,6 +208,20 @@ const Player: React.FC = () => {
     }
   };
 
+  const handleVolumeDrag = (e: MouseEvent) => {
+    if (isDraggingVolume && volumeRef.current) {
+      const rect = volumeRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const newVolume = Math.max(0, Math.min(1, x / rect.width));
+      setPlayerVolume(newVolume);
+    }
+  };
+
+  const handleVolumeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDraggingVolume(true);
+    handleVolumeClick(e);
+  };
+
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const getVolumeIcon = () => {
@@ -140,7 +260,7 @@ const Player: React.FC = () => {
           <FaStepBackward 
             size={18} 
             className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
-            onClick={playPrevious}
+            onClick={playPreviousSong}
           />
           <button 
             onClick={togglePlayPause}
@@ -151,7 +271,7 @@ const Player: React.FC = () => {
           <FaStepForward 
             size={18} 
             className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
-            onClick={playNext}
+            onClick={playNextSong}
           />
           <FaRedo 
             size={14} 
@@ -191,11 +311,16 @@ const Player: React.FC = () => {
           <div 
             ref={volumeRef}
             className="hidden sm:block w-16 md:w-24 h-1 bg-white/20 rounded-full cursor-pointer relative pointer-events-auto"
+            onMouseDown={handleVolumeMouseDown}
             onClick={handleVolumeClick}
           >
             <div 
               className="h-full bg-white group-hover:bg-blue-500 rounded-full"
               style={{ width: `${volume * 100}%` }}
+            />
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+              style={{ left: `calc(${volume * 100}% - 6px)` }}
             />
           </div>
         </div>
