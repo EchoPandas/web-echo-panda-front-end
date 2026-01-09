@@ -15,9 +15,10 @@ interface Props {
   isLightMode?: boolean;
   limit?: number; // how many artists to show
   layout?: "carousel" | "grid"; // display style
+  artists?: Artist[]; // optional pre-fetched artists
 }
 
-const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true, limit = 10, layout = "carousel" }) => {
+const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true, limit = 10, layout = "carousel", artists: propArtists }) => {
   const navigate = useNavigate();
   const { getCachedData } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -26,9 +27,14 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", isLightMode = true,
   const textColor = isLightMode ? "text-gray-900" : "text-white";
 
   useEffect(() => {
-    fetchArtists();
+    if (propArtists) {
+      setArtists(propArtists);
+      setLoading(false);
+    } else {
+      fetchArtists();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [limit]);
+  }, [limit, propArtists]);
 
   const fetchArtists = async () => {
     try {

@@ -1,20 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../backend/supabaseClient';
 import { useDataCache } from '../../contexts/DataCacheContext';
+import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { FaSpinner } from 'react-icons/fa';
-import { isSongFavorite, toggleFavorite } from '../../backend/favoritesService';
+import Song from '../../components/Song';
 
-interface Song {
+interface Artist {
+  id: string;
+  name: string;
+  image_url?: string;
+}
+
+interface Album {
+  id: string;
+  title: string;
+  cover_url: string;
+}
+
+interface SongType {
   id: string;
   title: string;
   duration: number;
   created_at: string;
-  album?: {
-    id: string;
-    title: string;
-    cover_url: string;
-  };
+  audio_url?: string;
+  artists?: Artist[];
+  album?: Album;
 }
 
 interface Props {
@@ -22,23 +32,15 @@ interface Props {
 }
 
 export default function PopularSongs({ artistId }: Props) {
-  const navigate = useNavigate();
   const { getCachedData } = useDataCache();
-  const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
+  const { playSong } = useAudioPlayer();
   const [showAll, setShowAll] = useState(false);
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<SongType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchArtistSongs();
   }, [artistId]);
-
-  useEffect(() => {
-    // Check favorite status for all songs
-    songs.forEach(song => {
-      checkFavoriteStatus(song.id);
-    });
-  }, [songs]);
 
   const fetchArtistSongs = async () => {
     try {
@@ -55,8 +57,12 @@ export default function PopularSongs({ artistId }: Props) {
               id,
               title,
               duration,
+              audio_url,
               created_at,
-              albums(id, title, cover_url)
+              albums(id, title, cover_url),
+              song_artist(
+                artists(id, name, image_url)
+              )
             )
           `)
           .eq('artist_id', artistId)
@@ -68,15 +74,17 @@ export default function PopularSongs({ artistId }: Props) {
 
         if (error) throw error;
 
-        const transformedSongs: Song[] = (songsData || [])
+        const transformedSongs: SongType[] = (songsData || [])
           .map((item: any) => item.songs)
           .filter(Boolean)
           .map((song: any) => ({
             id: song.id,
             title: song.title,
             duration: song.duration,
+            audio_url: song.audio_url,
             created_at: song.created_at,
-            album: song.albums
+            album: song.albums,
+            artists: song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || []
           }));
 
         return transformedSongs;
@@ -92,30 +100,23 @@ export default function PopularSongs({ artistId }: Props) {
 
   const displayedSongs = showAll ? songs : songs.slice(0, 5);
 
-  const checkFavoriteStatus = async (songId: string) => {
-    const isFav = await isSongFavorite(songId);
-    setFavorites(prev => ({ ...prev, [songId]: isFav }));
-  };
-
-  const handleToggleFavorite = async (songId: string) => {
-    const success = await toggleFavorite(songId);
-    if (success) {
-      setFavorites(prev => ({
-        ...prev,
-        [songId]: !prev[songId]
-      }));
-    }
-  };
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handlePlaySong = (songId: string) => {
+    const song = songs.find(s => s.id === songId);
+    if (song && song.audio_url) {
+      playSong({
+        id: song.id,
+        title: song.title,
+        artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+        coverUrl: song.album?.cover_url || '',
+        audioUrl: song.audio_url,
+        duration: song.duration
+      });
+    }
   };
 
   if (loading) {
@@ -144,62 +145,23 @@ export default function PopularSongs({ artistId }: Props) {
     <section>
       <h2 className="text-2xl font-semibold mb-4">Popular</h2>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-zinc-300">
-          <thead className="border-b border-zinc-700">
-            <tr>
-              <th className="py-2 px-2">#</th>
-              <th className="py-2 px-2">Title</th>
-              <th className="py-2 px-2">Release Date</th>
-              <th className="py-2 px-2">Time</th>
-              <th className="py-2 px-2"></th>
-            </tr>
-          </thead>
-
-          <tbody className="text-zinc-400">
-            {displayedSongs.map((song, i) => (
-              <tr
-                key={song.id}
-                onClick={() => navigate(`/song/${song.id}`)}
-                className="border-b border-zinc-800 hover:bg-zinc-800/40 transition-all group cursor-pointer"
-              >
-                <td className="py-3 px-2 text-zinc-500 group-hover:text-zinc-300">
-                  {i + 1}
-                </td>
-                <td className="py-3 px-2 font-medium text-white">
-                  {song.title}
-                </td>
-                <td className="py-3 px-2">{formatDate(song.created_at)}</td>
-                <td className="py-3 px-2">{formatDuration(song.duration)}</td>
-                <td className="py-3 px-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(song.id);
-                    }}
-                    className="p-2 hover:bg-white/10 rounded-full transition-all group"
-                  >
-                    <svg 
-                      className={`w-5 h-5 transition-all ${
-                        favorites[song.id] 
-                          ? 'text-red-500 fill-red-500' 
-                          : 'text-zinc-400 fill-none group-hover:text-white'
-                      }`}
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-2">
+        {displayedSongs.map((song, i) => (
+          <Song
+            key={song.id}
+            id={song.id}
+            index={i + 1}
+            title={song.title}
+            artists={song.artists}
+            album={song.album}
+            duration={song.duration}
+            coverUrl={song.album?.cover_url}
+            metadata={formatDate(song.created_at)}
+            onPlay={handlePlaySong}
+          />
+        ))}
       </div>
 
-  
       {songs.length > 5 && (
         <div className="flex justify-center mt-6">
           <button 

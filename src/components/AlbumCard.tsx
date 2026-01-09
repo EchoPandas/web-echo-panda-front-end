@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 interface Artist {
   id: string;
   name: string;
-  image_url: string;
+  image_url?: string;
 }
 
 interface Album {
@@ -18,7 +18,7 @@ interface Album {
 }
 
 interface Props {
-  album: Album;
+  album: Album; 
 }
 
 export default function AlbumCard({ album }: Props) {

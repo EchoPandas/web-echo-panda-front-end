@@ -95,6 +95,7 @@ const Home: React.FC = () => {
       });
 
       setTags(data);
+      console.log('🏷️ [Home] Tags state updated:', data);
     } catch (error) {
       console.error('Error fetching tags:', error);
     }

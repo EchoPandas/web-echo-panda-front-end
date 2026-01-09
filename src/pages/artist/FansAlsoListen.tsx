@@ -9,25 +9,40 @@ interface Artist {
   image_url?: string;
 }
 
-export default function FansAlsoListen() {
+interface Props {
+  artistId?: string;
+}
+
+export default function FansAlsoListen({ artistId }: Props) {
   const { getCachedData } = useDataCache();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchArtists();
-  }, []);
+  }, [artistId]);
 
   const fetchArtists = async () => {
     try {
-      const data = await getCachedData('fans_also_listen_artists', async () => {
-        const { data: artistsData, error } = await supabase
+      const data = await getCachedData(`fans_also_listen_${artistId || 'all'}`, async () => {
+        console.log('🔄 [Fans Also Listen] Fetching related artists...');
+
+        let query = supabase
           .from('artists')
           .select('id, name, image_url')
           .eq('status', true)
-          .order('name', { ascending: true });
+          .order('name', { ascending: true })
+          .limit(10);
+
+        // Exclude current artist if provided
+        if (artistId) {
+          query = query.neq('id', artistId);
+        }
+
+        const { data: artistsData, error } = await query;
 
         if (error) throw error;
+        console.log(`✅ [Fans Also Listen] ${artistsData?.length || 0} artists loaded`);
         return artistsData || [];
       });
 
