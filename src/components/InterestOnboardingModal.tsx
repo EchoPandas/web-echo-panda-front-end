@@ -1,34 +1,26 @@
 import React, { useState, useEffect } from "react";
 
+interface StepConfig {
+  id: string;
+  title: string;
+  subtitle: string;
+  options: string[];
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (interests: string[]) => void;
+  genreOptions?: string[]; // Dynamic genres from categories table
 }
 
-const STEPS = [
-  {
-    id: "genres",
-    title: "Choose Your Favorite Genres",
-    subtitle: "What kind of music do you enjoy listening to?",
-    options: ["Pop", "K-Pop", "Khmer", "EDM", "Rap"],
-  },
-  {
-    id: "moods",
-    title: "Your Current Mood",
-    subtitle: "How are you feeling right now?",
-    options: ["Happy", "Sad", "Chill", "Focus"],
-  },
-  {
-    id: "languages",
-    title: "Preferred Language",
-    subtitle: "Which language do you prefer for your music?",
-    options: ["Khmer", "English", "Korean", "Chinese,","Indonesian,"],
-  },
+const DEFAULT_STEPS_CONFIG: StepConfig[] = [
+  { id: "moods", title: "Your Current Mood", subtitle: "How are you feeling right now?", options: ["Happy", "Sad", "Chill", "Focus"] },
+  { id: "languages", title: "Preferred Language", subtitle: "Which language do you prefer for your music?", options: ["Khmer", "English", "Korean", "Chinese", "Indonesian"] },
 ];
 
 
-const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
+const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, genreOptions = [] }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, string[]>>({
     genres: [],
@@ -36,6 +28,17 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave }) =
     languages: [],
   });
   const [loading, setLoading] = useState(false);
+
+  // Build STEPS with dynamic genres
+  const STEPS: StepConfig[] = [
+    {
+      id: "genres",
+      title: "Choose Your Favorite Genres",
+      subtitle: "What kind of music do you enjoy listening to?",
+      options: genreOptions.length > 0 ? genreOptions : ["Pop", "K-Pop", "Khmer", "EDM", "Rap"],
+    },
+    ...DEFAULT_STEPS_CONFIG.slice(1),
+  ];
 
   // Rehydrate draft when modal opens (so users don't lose progress)
   useEffect(() => {

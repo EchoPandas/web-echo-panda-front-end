@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaEllipsisH, FaSpinner } from "react-icons/fa";
 import { supabase } from "../../backend/supabaseClient";
 import { useDataCache } from "../../contexts/DataCacheContext";
+import { useAudioPlayer } from "../../contexts/AudioPlayerContext";
+import { trackSongPlay } from "../../backend/playTrackingService";
 import Song from "../../components/Song";
 
 interface Artist {
@@ -41,6 +43,7 @@ const AlbumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getCachedData } = useDataCache();
+  const { playSong } = useAudioPlayer();
 
   const [loading, setLoading] = useState(true);
   const [album, setAlbum] = useState<AlbumMeta | null>(null);
@@ -128,7 +131,29 @@ const AlbumDetails: React.FC = () => {
     }
   };
 
+  const handlePlaySong = async (songId: string) => {
+    const song = songs.find(s => s.id === songId);
+    if (!song || !song.audio_url) {
+      console.error('Song not found or missing audio URL');
+      return;
+    }
 
+    const artistNames = song.artists && song.artists.length > 0
+      ? song.artists.map(a => a.name).join(", ")
+      : "Various Artists";
+
+    playSong({
+      id: song.id,
+      title: song.title,
+      artist: artistNames,
+      coverUrl: song.songCover_url || album?.cover_url || '',
+      audioUrl: song.audio_url,
+      duration: song.duration,
+    });
+
+    // Track the play
+    await trackSongPlay(song.id);
+  };
 
   if (loading) {
     return (
@@ -192,7 +217,7 @@ const AlbumDetails: React.FC = () => {
               coverUrl={s.songCover_url}
               metadata={formatDate(s.created_at)}
               hideAlbum={true}
-              onPlay={() => {/* wired in dedicated player page; optional here */}}
+              onPlay={handlePlaySong}
               onAddToPlaylist={() => {/* open playlist modal elsewhere if needed */}}
               onAddToFavorite={() => {/* favorites handled inside Song */}}
             />

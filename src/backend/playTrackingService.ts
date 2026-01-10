@@ -61,59 +61,62 @@ export const getSongPlayCount = async (songId: string): Promise<number> => {
   }
 };
 
-// Get most played songs (global)
+// Get most played songs (global) - optimized
 export const getMostPlayedSongs = async (limit: number = 25): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
-      .from("user_listens")
-      .select(`
-        song_id,
-        songs(
-          id,
-          title,
-          duration,
-          songCover_url,
-          album_id,
-          song_artist(
-            artists(id, name, image_url)
-          ),
-          albums(id, title, cover_url)
-        )
-      `)
-      .order("listened_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching most played:", error);
-      return [];
-    }
-
-    // Count plays per song
-    const playCountMap: { [key: string]: { count: number; song: any } } = {};
+    console.log('🔄 Fetching most played songs...');
     
-    (data || []).forEach((item: any) => {
-      if (item.songs) {
-        const songId = item.song_id;
-        if (!playCountMap[songId]) {
-          playCountMap[songId] = { count: 0, song: item.songs };
-        }
-        playCountMap[songId].count++;
-      }
+    // Get top songs by doing aggregation in a simpler way
+    const { data: listenData, error } = await supabase
+      .from('user_listens')
+      .select('song_id')
+      .limit(5000); // Reasonable limit to avoid fetching everything
+
+    if (error) throw error;
+
+    // Count in JS (still faster than before since we only fetch song_id)
+    const counts = new Map<string, number>();
+    (listenData || []).forEach(item => {
+      counts.set(item.song_id, (counts.get(item.song_id) || 0) + 1);
     });
 
-    // Convert to array and sort by play count
-    const songsWithPlayCount = Object.values(playCountMap)
-      .map((item) => ({
-        ...item.song,
-        play_count: item.count,
-        artists: item.song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || [],
-        album: item.song.albums || null,
-      }))
-      .sort((a, b) => b.play_count - a.play_count)
-      .slice(0, limit);
+    // Get top song IDs
+    const topSongIds = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id, count]) => ({ id, count }));
 
-    return songsWithPlayCount;
+    if (topSongIds.length === 0) return [];
+
+    // Fetch full song details only for top songs
+    const { data: songsData, error: songsError } = await supabase
+      .from('songs')
+      .select(`
+        id,
+        title,
+        duration,
+        audio_url,
+        songCover_url,
+        album_id,
+        song_artist(artists(id, name, image_url)),
+        albums(id, title, cover_url)
+      `)
+      .in('id', topSongIds.map(s => s.id));
+
+    if (songsError) throw songsError;
+
+    // Merge counts with song data
+    return (songsData || []).map(song => {
+      const playCount = topSongIds.find(s => s.id === song.id)?.count || 0;
+      return {
+        ...song,
+        play_count: playCount,
+        artists: song.song_artist?.map((sa: any) => sa.artists).filter(Boolean) || [],
+        album: song.albums || null,
+      };
+    }).sort((a, b) => b.play_count - a.play_count);
   } catch (error) {
-    console.error("Error fetching most played:", error);
+    console.error('Error fetching most played songs:', error);
     return [];
   }
 };
@@ -213,62 +216,65 @@ export const getUserListeningStats = async (): Promise<{
   }
 };
 
-// Get most played albums (calculated from song plays)
+// Get most played albums (calculated from song plays) - optimized
 export const getMostPlayedAlbums = async (limit: number = 10): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
-      .from("user_listens")
+    // Optimized: fetch limited listens and aggregate in JS
+    const { data: listenData, error } = await supabase
+      .from('user_listens')
       .select(`
-        song_id,
-        songs!inner(
-          album_id,
-          albums!inner(
-            id,
-            title,
-            cover_url,
-            release_date,
-            album_artist(
-              artists(id, name, image_url)
-            )
-          )
-        )
+        songs!inner(album_id)
       `)
-      .not("songs.album_id", "is", null);
+      .not('songs.album_id', 'is', null)
+      .limit(5000); // Reasonable limit
 
-    if (error) {
-      console.error("Error fetching most played albums:", error);
-      return [];
-    }
+    if (error) throw error;
 
     // Count plays per album
-    const playCountMap: { [key: string]: { count: number; album: any } } = {};
-    
-    (data || []).forEach((item: any) => {
-      if (item.songs?.albums) {
-        const albumId = item.songs.albums.id;
-        if (!playCountMap[albumId]) {
-          playCountMap[albumId] = { count: 0, album: item.songs.albums };
-        }
-        playCountMap[albumId].count++;
+    const counts = new Map<string, number>();
+    (listenData || []).forEach((item: any) => {
+      const albumId = item.songs?.album_id;
+      if (albumId) {
+        counts.set(albumId, (counts.get(albumId) || 0) + 1);
       }
     });
 
-    // Convert to array and sort by play count
-    const albumsWithPlayCount = Object.values(playCountMap)
-      .map((item) => ({
-        id: item.album.id,
-        title: item.album.title,
-        cover_url: item.album.cover_url,
-        release_date: item.album.release_date,
-        play_count: item.count,
-        artists: item.album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
-      }))
-      .sort((a, b) => b.play_count - a.play_count)
-      .slice(0, limit);
+    // Get top album IDs
+    const topAlbumIds = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id, count]) => ({ id, count }));
 
-    return albumsWithPlayCount;
+    if (topAlbumIds.length === 0) return [];
+
+    // Fetch full album details only for top albums
+    const { data: albumsData, error: albumsError } = await supabase
+      .from('albums')
+      .select(`
+        id,
+        title,
+        cover_url,
+        release_date,
+        album_artist(artists(id, name, image_url))
+      `)
+      .in('id', topAlbumIds.map(a => a.id));
+
+    if (albumsError) throw albumsError;
+
+    // Merge counts with album data
+    return (albumsData || []).map(album => {
+      const playCount = topAlbumIds.find(a => a.id === album.id)?.count || 0;
+      return {
+        id: album.id,
+        title: album.title,
+        cover_url: album.cover_url,
+        release_date: album.release_date,
+        play_count: playCount,
+        artists: album.album_artist?.map((aa: any) => aa.artists).filter(Boolean) || [],
+      };
+    }).sort((a, b) => b.play_count - a.play_count);
   } catch (error) {
-    console.error("Error fetching most played albums:", error);
+    console.error('Error fetching most played albums:', error);
     return [];
   }
 };

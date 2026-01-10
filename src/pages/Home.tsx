@@ -6,10 +6,9 @@ import AppFooter from "./home/AppFooter";
 import ContactUs from "./ContactUs";
 
 import InterestOnboardingModal from "../components/InterestOnboardingModal";
-import { getRecommendationsForInterests } from "../backend/recommendationService";
+import { getRecommendationsForInterests, type AlbumRef } from "../backend/recommendationService";
 import { supabase } from "../backend/supabaseClient";
 import { useDataCache } from "../contexts/DataCacheContext";
-import type { Song } from "../data/searchData";
 
 interface Tag {
   id: string;
@@ -24,8 +23,9 @@ const Home: React.FC = () => {
   const { getCachedData } = useDataCache();
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [recommendedSongs, setRecommendedSongs] = useState<Song[] | undefined>(undefined);
+  const [recommendedAlbums, setRecommendedAlbums] = useState<AlbumRef[] | undefined>(undefined);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [genreOptions, setGenreOptions] = useState<string[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('onboarding:interests');
@@ -34,15 +34,32 @@ const Home: React.FC = () => {
     } else {
       try {
         const interests = JSON.parse(stored);
-        getRecommendationsForInterests(interests).then(setRecommendedSongs);
+        getRecommendationsForInterests(interests).then(setRecommendedAlbums);
       } catch (e) {
         // ignore
       }
     }
 
-    // Fetch dynamic tags
+    // Fetch dynamic genres and tags
+    fetchGenres();
     fetchTags();
   }, []);
+
+  const fetchGenres = async () => {
+    try {
+      const { data: categoryData, error } = await supabase
+        .from('categories')
+        .select('id, name');
+
+      if (error) throw error;
+
+      const genreNames = (categoryData || []).map((cat: any) => cat.name);
+      setGenreOptions(genreNames);
+      console.log('✅ [Home] Genres loaded:', genreNames);
+    } catch (error) {
+      console.error('Error fetching genres:', error);
+    }
+  };
 
   const fetchTags = async () => {
     try {
@@ -104,7 +121,7 @@ const Home: React.FC = () => {
   const handleOnboardingSave = (interests: string[]) => {
     localStorage.setItem('onboarding:interests', JSON.stringify(interests));
     setIsOnboardingOpen(false);
-    getRecommendationsForInterests(interests).then(setRecommendedSongs);
+    getRecommendationsForInterests(interests).then(setRecommendedAlbums);
   };
 
   return (
@@ -112,8 +129,8 @@ const Home: React.FC = () => {
       {/* Hero */}
       <HeroSection isLightMode={isLightMode} />
 
-      {recommendedSongs && recommendedSongs.length > 0 && (
-        <SongSection title="Recommended for you" isLightMode={isLightMode} songs={recommendedSongs} />
+      {recommendedAlbums && recommendedAlbums.length > 0 && (
+        <SongSection title="Recommended for you" isLightMode={isLightMode} songs={recommendedAlbums} />
       )}
 
       {/* Trending Songs */}
@@ -142,6 +159,7 @@ const Home: React.FC = () => {
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
         onSave={handleOnboardingSave}
+        genreOptions={genreOptions}
       />
 
       {/* Footer */}
