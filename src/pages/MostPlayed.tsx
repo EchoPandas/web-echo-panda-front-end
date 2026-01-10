@@ -124,15 +124,28 @@ const MostPlayed: React.FC = () => {
     }
   };
 
-  const handlePlay = (songId: string) => {
-    // Track the play
-    trackSongPlay(songId);
+  const handlePlay = async (songId: string) => {
+    console.log('🎵 [MostPlayed] handlePlay called with songId:', songId);
     
     // Find the song data
     const song = songs.find(s => s.id === songId);
+    
+    if (!song) {
+      console.error('❌ [MostPlayed] Song not found:', songId);
+      return;
+    }
 
+    console.log('🎵 [MostPlayed] Song data:', song);
+    console.log('🎵 [MostPlayed] Audio URL:', song.audio_url);
 
-    if (song && song.audio_url) {
+    if (!song.audio_url) {
+      console.error('❌ [MostPlayed] No audio URL available for this song');
+      showToast('This song has no audio file');
+      return;
+    }
+
+    try {
+      // Start playing immediately
       playSong({
         id: song.id,
         title: song.title,
@@ -141,8 +154,14 @@ const MostPlayed: React.FC = () => {
         audioUrl: song.audio_url,
         duration: song.duration
       });
-    } else {
-      console.error('No audio URL available for this song');
+      
+      // Track the play in background (don't await)
+      trackSongPlay(songId).catch(err => 
+        console.error('Failed to track play:', err)
+      );
+    } catch (error) {
+      console.error('❌ [MostPlayed] Error playing song:', error);
+      showToast('Failed to play song');
     }
   };
 
